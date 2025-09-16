@@ -1,0 +1,240 @@
+/* Accounting Dashboard Styles */
+.accounting-dashboard {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+/* Financial Cards */
+.financial-card {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.financial-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.financial-card .card-body {
+  padding: 20px;
+}
+
+.revenue-card {
+  background: linear-gradient(135deg, #f6f7f9 0%, #e7f5ff 100%);
+  border-left: 4px solid #4e73df;
+}
+
+.expenses-card {
+  background: linear-gradient(135deg, #f6f7f9 0%, #fff1f1 100%);
+  border-left: 4px solid #e74a3b;
+}
+
+.profit-card {
+  background: linear-gradient(135deg, #f6f7f9 0%, #ebfaf2 100%);
+  border-left: 4px solid #1cc88a;
+}
+
+.invoices-card {
+  background: linear-gradient(135deg, #f6f7f9 0%, #f8f5ff 100%);
+  border-left: 4px solid #6f42c1;
+}
+
+.financial-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.revenue-card .financial-icon {
+  color: #4e73df;
+  background-color: rgba(78, 115, 223, 0.1);
+}
+
+.expenses-card .financial-icon {
+  color: #e74a3b;
+  background-color: rgba(231, 74, 59, 0.1);
+}
+
+.profit-card .financial-icon {
+  color: #1cc88a;
+  background-color: rgba(28, 200, 138, 0.1);
+}
+
+.invoices-card .financial-icon {
+  color: #6f42c1;
+  background-color: rgba(111, 66, 193, 0.1);
+}
+
+.financial-status h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 5px;
+}
+
+.financial-status p {
+  font-size: 14px;
+  color: #718096;
+  margin-bottom: 5px;
+}
+
+.positive-trend {
+  color: #1cc88a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.negative-trend {
+  color: #e74a3b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.neutral-trend {
+  color: #6c757d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Stat Cards */
+.stat-card {
+  text-align: center;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+.stat-card h3 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 10px 0 5px;
+}
+
+.stat-card p {
+  font-size: 13px;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.stat-icon.paid {
+  color: #1cc88a;
+  background-color: rgba(28, 200, 138, 0.1);
+}
+
+.stat-icon.overdue {
+  color: #e74a3b;
+  background-color: rgba(231, 74, 59, 0.1);
+}
+
+.stat-icon.clients {
+  color: #4e73df;
+  background-color: rgba(78, 115, 223, 0.1);
+}
+
+.stat-icon.recurring {
+  color: #6f42c1;
+  background-color: rgba(111, 66, 193, 0.1);
+}
+
+/* Health Cards */
+.health-card {
+  text-align: center;
+  padding: 20px;
+}
+
+.health-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 15px 0 5px;
+}
+
+.health-card p {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.health-progress {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+}
+
+/* Card Headers */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: transparent;
+  border-bottom: 1px solid #e3e6f0;
+}
+
+.card-header h4 {
+  margin-bottom: 0;
+  font-weight: 600;
+  color: #4e73df;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1199px) {
+  .financial-status h2 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 991px) {
+  .financial-card {
+    margin-bottom: 15px;
+  }
+  
+  .financial-status h2 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 767px) {
+  .financial-status {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .financial-icon {
+    margin-bottom: 10px;
+  }
+  
+  .ms-4 {
+    margin-left: 0 !important;
+  }
+  
+  .health-card {
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 575px) {
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .stat-card h3 {
+    font-size: 20px;
+  }
+}

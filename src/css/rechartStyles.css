@@ -1,0 +1,39 @@
+.sChartCard {
+  border: none;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.elevated-chart-card {
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease-in-out;
+}
+
+.elevated-chart-card:hover {
+  transform: translateY(-4px);
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 18px;
+  color: #333;
+}
+/* Custom chart tooltip */
+.recharts-default-tooltip {
+  background-color: #fff !important;
+  border: 1px solid #ddd !important;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Chart legends */
+.recharts-legend-item-text {
+  color: #666 !important;
+  font-size: 14px;
+}
+
+/* Chart axes */
+.recharts-cartesian-axis-tick-value {
+  fill: #666;
+  font-size: 12px;
+}

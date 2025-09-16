@@ -1,0 +1,176 @@
+/* sCardStyles.css */
+
+/* Base card style */
+/* Card styles */
+.s-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+}
+
+/* .s-card-header {
+  padding:5px 5px;
+  border-bottom: 1px solid #eee;
+}
+
+.s-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+} */
+
+.s-card-body {
+  padding: 15px;
+}
+
+/* Card types */
+.s-elevated {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.s-outlined {
+  border: 1px solid #ddd;
+}
+
+.s-flat {
+  border: none;
+  box-shadow: none;
+}
+
+/* Header, Body, Footer */
+/* .s-header {
+  padding: 16px 20px;
+  background-color: #f7f9fc;
+  border-bottom: 1px solid #eee;
+} */
+
+.s-body {
+  padding: 20px;
+}
+
+.s-footer {
+  padding: 12px 20px;
+  background-color: #f7f9fc;
+  border-top: 1px solid #eee;
+  font-size: 14px;
+  color: #888;
+}
+
+/* Image overlay card */
+.s-image-overlay {
+  position: relative;
+  color: white;
+  text-align: center;
+}
+
+.s-image-overlay img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
+.s-image-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+}
+/* Glassmorphism */
+.s-glass {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Neumorphism */
+.s-neumorphism {
+  background: #f0f0f0;
+  box-shadow: 8px 8px 16px #d9d9d9, -8px -8px 16px #ffffff;
+  border: none;
+}
+
+/* Gradient */
+.s-gradient {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  border: none;
+  color: white;
+}
+
+/* Hoverable */
+.s-hoverable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Icon Header */
+.with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Stat Card */
+.s-stat h3 {
+  font-size: 2.5rem;
+}
+.stat-trend {
+  font-weight: bold;
+}
+.stat-trend.up {
+  color: #28a745;
+}
+
+/* Avatar Card */
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Split Color */
+.accent-blue {
+  background: #4285f4;
+  color: white;
+}
+
+/* Font Family */
+body, .s-card, .s-body, .s-footer {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+.s-header, h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+}
+
+/* Card title specific */
+.s-header h5 {
+  font-weight: 600;
+}
+
+/* Stat card numbers */
+.s-stat h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+
+.highlighted-card {
+  border: 2px solid #ffc107 !important; /* Yellow border */
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.5) !important; /* Glow effect */
+  transform: scale(1.02);
+  transition: all 0.3s ease;
+}
+
+.highlighted-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 25px rgba(255, 193, 7, 0.7) !important;
+}

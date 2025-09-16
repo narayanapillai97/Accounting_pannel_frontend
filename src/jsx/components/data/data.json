@@ -1,0 +1,1456 @@
+{
+  "bank-details": [
+    {
+      "vemployee_id": 101,
+      "bank_name": "State Bank of India",
+      "branch": "Chennai Main",
+      "ifsc_code": "SBIN0001234",
+      "account_number": 5432109876,
+      "account_type": 1,
+      "upi_id": "harini@sbi"
+    },
+    {
+      "vemployee_id": 102,
+      "bank_name": "HDFC Bank",
+      "branch": "T Nagar",
+      "ifsc_code": "HDFC0000456",
+      "account_number": 9988776655,
+      "account_type": 0,
+      "upi_id": "john@hdfc"
+    },
+    {
+      "vemployee_id": 103,
+      "bank_name": "ICICI Bank",
+      "branch": "Anna Nagar",
+      "ifsc_code": "ICIC0000789",
+      "account_number": 1122334455,
+      "account_type": 1,
+      "upi_id": "meena@icici"
+    },
+    {
+      "vemployee_id": 104,
+      "bank_name": "Axis Bank",
+      "branch": "Adyar",
+      "ifsc_code": "UTIB0000123",
+      "account_number": 3344556677,
+      "account_type": 0,
+      "upi_id": "vijay@axis"
+    },
+    {
+      "vemployee_id": 105,
+      "bank_name": "Kotak Mahindra Bank",
+      "branch": "Guindy",
+      "ifsc_code": "KKBK0000456",
+      "account_number": 5566778899,
+      "account_type": 1,
+      "upi_id": "priya@kotak"
+    },
+    {
+      "vemployee_id": 106,
+      "bank_name": "Punjab National Bank",
+      "branch": "Egmore",
+      "ifsc_code": "PUNB0123456",
+      "account_number": 7788990011,
+      "account_type": 0,
+      "upi_id": "arun@pnb"
+    },
+    {
+      "vemployee_id": 107,
+      "bank_name": "Canara Bank",
+      "branch": "Velachery",
+      "ifsc_code": "CNRB0000789",
+      "account_number": 8899001122,
+      "account_type": 1,
+      "upi_id": "lavanya@canara"
+    },
+    {
+      "vemployee_id": 108,
+      "bank_name": "Indian Bank",
+      "branch": "Saidapet",
+      "ifsc_code": "IDIB0000456",
+      "account_number": 9900112233,
+      "account_type": 0,
+      "upi_id": "manoj@indianbank"
+    },
+    {
+      "vemployee_id": 109,
+      "bank_name": "Bank of Baroda",
+      "branch": "Chromepet",
+      "ifsc_code": "BARB0123456",
+      "account_number": 2233445566,
+      "account_type": 1,
+      "upi_id": "geetha@bob"
+    },
+    {
+      "vemployee_id": 110,
+      "bank_name": "Yes Bank",
+      "branch": "Mylapore",
+      "ifsc_code": "YESB0000123",
+      "account_number": 4455667788,
+      "account_type": 0,
+      "upi_id": "suresh@yesbank"
+    },
+    {
+      "vemployee_id": 111,
+      "bank_name": "IDFC First Bank",
+      "branch": "Tambaram",
+      "ifsc_code": "IDFB0000456",
+      "account_number": 6677889900,
+      "account_type": 1,
+      "upi_id": "nisha@idfc"
+    },
+    {
+      "vemployee_id": 112,
+      "bank_name": "Federal Bank",
+      "branch": "Perungudi",
+      "ifsc_code": "FDRL0000789",
+      "account_number": 7788001122,
+      "account_type": 0,
+      "upi_id": "karthik@federal"
+    },
+    {
+      "vemployee_id": 113,
+      "bank_name": "Union Bank of India",
+      "branch": "Porur",
+      "ifsc_code": "UBIN0123456",
+      "account_number": 8899112233,
+      "account_type": 1,
+      "upi_id": "reshma@unionbank"
+    },
+    {
+      "vemployee_id": 114,
+      "bank_name": "South Indian Bank",
+      "branch": "Madipakkam",
+      "ifsc_code": "SIBL0000456",
+      "account_number": 9900223344,
+      "account_type": 0,
+      "upi_id": "sanjay@sib"
+    },
+    {
+      "vemployee_id": 115,
+      "bank_name": "Karur Vysya Bank",
+      "branch": "Pallavaram",
+      "ifsc_code": "KVBL0000123",
+      "account_number": 1122557799,
+      "account_type": 1,
+      "upi_id": "deepa@kvb"
+    }
+  ],
+
+  "vendors": [
+    {
+      "id": 1,
+      "vendorName": "ABC Supplies",
+      "contactPerson": "John Doe",
+      "mobile": "9876543210",
+      "email": "abc@example.com",
+      "gst": "29ABCDE1234F2Z5",
+      "address": "123 Main Street, Chennai",
+      "paymentTerms": "Net 30",
+      "status": 1
+    },
+    {
+      "id": 2,
+      "vendorName": "XYZ Traders",
+      "contactPerson": "Jane Smith",
+      "mobile": "9876543211",
+      "email": "xyz@example.com",
+      "gst": "29XYZDE5678G3H6",
+      "address": "456 Anna Nagar, Chennai",
+      "paymentTerms": "Net 45",
+      "status": 0
+    },
+    {
+      "id": 3,
+      "vendorName": "Sunrise Distributors",
+      "contactPerson": "Arun Kumar",
+      "mobile": "9876543212",
+      "email": "sunrise@example.com",
+      "gst": "29SUNRI1234K7M8",
+      "address": "789 T Nagar, Chennai",
+      "paymentTerms": "Net 60",
+      "status": 1
+    },
+    {
+      "id": 4,
+      "vendorName": "Blue Ocean Imports",
+      "contactPerson": "Priya R",
+      "mobile": "9876543213",
+      "email": "blueocean@example.com",
+      "gst": "29BLUEO4567N8O9",
+      "address": "12 Marina Road, Chennai",
+      "paymentTerms": "Net 15",
+      "status": 1
+    },
+    {
+      "id": 5,
+      "vendorName": "EverGreen Agro",
+      "contactPerson": "Karthik V",
+      "mobile": "9876543214",
+      "email": "evergreen@example.com",
+      "gst": "29EVERG7890P1Q2",
+      "address": "54 Guindy, Chennai",
+      "paymentTerms": "Net 30",
+      "status": 0
+    },
+    {
+      "id": 6,
+      "vendorName": "Urban Hardware",
+      "contactPerson": "Sanjay P",
+      "mobile": "9876543215",
+      "email": "urbanhardware@example.com",
+      "gst": "29URBAN1234R5S6",
+      "address": "88 Pallavaram, Chennai",
+      "paymentTerms": "Net 45",
+      "status": 1
+    },
+    {
+      "id": 7,
+      "vendorName": "Royal Textiles",
+      "contactPerson": "Meena L",
+      "mobile": "9876543216",
+      "email": "royaltextiles@example.com",
+      "gst": "29ROYAL5678T9U0",
+      "address": "33 Mylapore, Chennai",
+      "paymentTerms": "Net 60",
+      "status": 0
+    },
+    {
+      "id": 8,
+      "vendorName": "Elite Electronics",
+      "contactPerson": "Vijay Anand",
+      "mobile": "9876543217",
+      "email": "elite@example.com",
+      "gst": "29ELITE9012V3W4",
+      "address": "77 Velachery, Chennai",
+      "paymentTerms": "Net 30",
+      "status": 1
+    },
+    {
+      "id": 9,
+      "vendorName": "Metro Chemicals",
+      "contactPerson": "Lavanya S",
+      "mobile": "9876543218",
+      "email": "metrochem@example.com",
+      "gst": "29METRO3456X7Y8",
+      "address": "21 Egmore, Chennai",
+      "paymentTerms": "Net 15",
+      "status": 1
+    },
+    {
+      "id": 10,
+      "vendorName": "Green Valley Foods",
+      "contactPerson": "Manoj R",
+      "mobile": "9876543219",
+      "email": "greenvalley@example.com",
+      "gst": "29GREEN7890Z1A2",
+      "address": "19 Saidapet, Chennai",
+      "paymentTerms": "Net 45",
+      "status": 0
+    },
+    {
+      "id": 11,
+      "vendorName": "Silver Star Furniture",
+      "contactPerson": "Geetha M",
+      "mobile": "9876543220",
+      "email": "silverstar@example.com",
+      "gst": "29SILVE1234B5C6",
+      "address": "65 Porur, Chennai",
+      "paymentTerms": "Net 30",
+      "status": 1
+    },
+    {
+      "id": 12,
+      "vendorName": "FastTrack Logistics",
+      "contactPerson": "Suresh N",
+      "mobile": "9876543221",
+      "email": "fasttrack@example.com",
+      "gst": "29FASTT5678D9E0",
+      "address": "99 Tambaram, Chennai",
+      "paymentTerms": "Net 60",
+      "status": 0
+    },
+    {
+      "id": 13,
+      "vendorName": "Crystal Beverages",
+      "contactPerson": "Nisha R",
+      "mobile": "9876543222",
+      "email": "crystal@example.com",
+      "gst": "29CRYST9012F3G4",
+      "address": "17 Perungudi, Chennai",
+      "paymentTerms": "Net 15",
+      "status": 1
+    },
+    {
+      "id": 14,
+      "vendorName": "Nova Plastics",
+      "contactPerson": "Karthik S",
+      "mobile": "9876543223",
+      "email": "novaplastics@example.com",
+      "gst": "29NOVA3456H7I8",
+      "address": "48 Madipakkam, Chennai",
+      "paymentTerms": "Net 45",
+      "status": 1
+    },
+    {
+      "id": 15,
+      "vendorName": "Prime Steel Works",
+      "contactPerson": "Deepa T",
+      "mobile": "9876543224",
+      "email": "prime@example.com",
+      "gst": "29PRIME7890J1K2",
+      "address": "11 Pallikaranai, Chennai",
+      "paymentTerms": "Net 30",
+      "status": 0
+    }
+  ],
+  
+  "users": [
+    {
+      "full_name": "John Doe",
+      "email": "john@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543210",
+      "role": "admin",
+      "status": 1,
+      "created_at": "2023-01-15 10:30:00",
+      "updated_at": "2023-01-15 10:30:00"
+    },
+    {
+      "full_name": "Jane Smith",
+      "email": "jane@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543211",
+      "role": "user",
+      "status": 0,
+      "created_at": "2023-01-16 11:45:00",
+      "updated_at": "2023-01-16 11:45:00"
+    },
+    {
+      "full_name": "Michael Johnson",
+      "email": "michael@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543212",
+      "role": "manager",
+      "status": 1,
+      "created_at": "2023-02-01 09:20:00",
+      "updated_at": "2023-02-01 09:20:00"
+    },
+    {
+      "full_name": "Emily Davis",
+      "email": "emily@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543213",
+      "role": "user",
+      "status": 1,
+      "created_at": "2023-02-05 14:15:00",
+      "updated_at": "2023-02-05 14:15:00"
+    },
+    {
+      "full_name": "William Brown",
+      "email": "william@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543214",
+      "role": "admin",
+      "status": 0,
+      "created_at": "2023-02-10 08:50:00",
+      "updated_at": "2023-02-10 08:50:00"
+    },
+    {
+      "full_name": "Sophia Wilson",
+      "email": "sophia@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543215",
+      "role": "user",
+      "status": 1,
+      "created_at": "2023-03-01 17:00:00",
+      "updated_at": "2023-03-01 17:00:00"
+    },
+    {
+      "full_name": "James Taylor",
+      "email": "james@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543216",
+      "role": "manager",
+      "status": 1,
+      "created_at": "2023-03-12 11:10:00",
+      "updated_at": "2023-03-12 11:10:00"
+    },
+    {
+      "full_name": "Olivia Martinez",
+      "email": "olivia@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543217",
+      "role": "user",
+      "status": 0,
+      "created_at": "2023-03-20 19:40:00",
+      "updated_at": "2023-03-20 19:40:00"
+    },
+    {
+      "full_name": "Benjamin Anderson",
+      "email": "benjamin@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543218",
+      "role": "admin",
+      "status": 1,
+      "created_at": "2023-04-05 13:25:00",
+      "updated_at": "2023-04-05 13:25:00"
+    },
+    {
+      "full_name": "Ava Thomas",
+      "email": "ava@example.com",
+      "password": "hashed_password",
+      "mobile_number": "9876543219",
+      "role": "user",
+      "status": 1,
+      "created_at": "2023-04-10 16:05:00",
+      "updated_at": "2023-04-10 16:05:00"
+    }
+  ],
+
+  "verifications": [
+    {
+      "employeeId": 1001,
+      "aadharNumber": "123456789012",
+      "panNumber": "ABCDE1234F",
+      "passportNo": "A12345678",
+      "verificationDate": "2023-05-15",
+      "verifiedBy": "Admin User",
+      "status": 1
+    },
+    {
+      "employeeId": 1002,
+      "aadharNumber": "987654321098",
+      "panNumber": "XYZDE5678G",
+      "passportNo": "B87654321",
+      "verificationDate": "2023-06-20",
+      "verifiedBy": "HR Manager",
+      "status": 0
+    },
+    {
+      "employeeId": 1003,
+      "aadharNumber": "456789123456",
+      "panNumber": "LMNOP2345H",
+      "passportNo": "C23456789",
+      "verificationDate": "2023-07-05",
+      "verifiedBy": "Admin User",
+      "status": 1
+    },
+    {
+      "employeeId": 1004,
+      "aadharNumber": "321654987012",
+      "panNumber": "QWERT3456J",
+      "passportNo": "D34567890",
+      "verificationDate": "2023-07-18",
+      "verifiedBy": "HR Manager",
+      "status": 1
+    },
+    {
+      "employeeId": 1005,
+      "aadharNumber": "654987321098",
+      "panNumber": "ASDFG4567K",
+      "passportNo": "E45678901",
+      "verificationDate": "2023-08-01",
+      "verifiedBy": "Supervisor",
+      "status": 0
+    },
+    {
+      "employeeId": 1006,
+      "aadharNumber": "789123456012",
+      "panNumber": "ZXCVB5678L",
+      "passportNo": "F56789012",
+      "verificationDate": "2023-08-10",
+      "verifiedBy": "Admin User",
+      "status": 1
+    },
+    {
+      "employeeId": 1007,
+      "aadharNumber": "987321654012",
+      "panNumber": "POIUY6789M",
+      "passportNo": "G67890123",
+      "verificationDate": "2023-08-20",
+      "verifiedBy": "HR Manager",
+      "status": 1
+    },
+    {
+      "employeeId": 1008,
+      "aadharNumber": "159753486012",
+      "panNumber": "LKJHG7890N",
+      "passportNo": "H78901234",
+      "verificationDate": "2023-08-25",
+      "verifiedBy": "Supervisor",
+      "status": 0
+    },
+    {
+      "employeeId": 1009,
+      "aadharNumber": "258456789012",
+      "panNumber": "MNBVC8901P",
+      "passportNo": "I89012345",
+      "verificationDate": "2023-09-01",
+      "verifiedBy": "Admin User",
+      "status": 1
+    },
+    {
+      "employeeId": 1010,
+      "aadharNumber": "357159258012",
+      "panNumber": "TREWQ9012Q",
+      "passportNo": "J90123456",
+      "verificationDate": "2023-09-10",
+      "verifiedBy": "HR Manager",
+      "status": 0
+    },
+    {
+      "employeeId": 1011,
+      "aadharNumber": "654321987012",
+      "panNumber": "YUIOP1234R",
+      "passportNo": "K12345679",
+      "verificationDate": "2023-09-15",
+      "verifiedBy": "Supervisor",
+      "status": 1
+    },
+    {
+      "employeeId": 1012,
+      "aadharNumber": "147258369012",
+      "panNumber": "GHJKL2345S",
+      "passportNo": "L23456780",
+      "verificationDate": "2023-09-20",
+      "verifiedBy": "Admin User",
+      "status": 1
+    },
+    {
+      "employeeId": 1013,
+      "aadharNumber": "369258147012",
+      "panNumber": "BNMAS3456T",
+      "passportNo": "M34567891",
+      "verificationDate": "2023-09-25",
+      "verifiedBy": "HR Manager",
+      "status": 0
+    },
+    {
+      "employeeId": 1014,
+      "aadharNumber": "753159486012",
+      "panNumber": "VCXZB4567U",
+      "passportNo": "N45678902",
+      "verificationDate": "2023-10-01",
+      "verifiedBy": "Supervisor",
+      "status": 1
+    },
+    {
+      "employeeId": 1015,
+      "aadharNumber": "951357258012",
+      "panNumber": "PLMKJ5678V",
+      "passportNo": "O56789013",
+      "verificationDate": "2023-10-05",
+      "verifiedBy": "Admin User",
+      "status": 0
+    }
+  ],
+
+  
+  "mainCategories": [
+    {
+      "id": 1,
+      "category_name": "Electronics",
+      "description": "All electronic gadgets and devices",
+      "status": 1
+    },
+    {
+      "id": 2,
+      "category_name": "Clothing",
+      "description": "Men's, women's and kids clothing",
+      "status": 1
+    },
+    {
+      "id": 3,
+      "category_name": "Furniture",
+      "description": "Home and office furniture",
+      "status": 1
+    },
+    {
+      "id": 4,
+      "category_name": "Groceries",
+      "description": "Daily essential food items",
+      "status": 1
+    },
+    {
+      "id": 5,
+      "category_name": "Books",
+      "description": "All types of books and magazines",
+      "status": 1
+    },
+    {
+      "id": 6,
+      "category_name": "Toys",
+      "description": "Children toys and games",
+      "status": 1
+    },
+    {
+      "id": 7,
+      "category_name": "Sports",
+      "description": "Sports equipment and gear",
+      "status": 1
+    },
+    {
+      "id": 8,
+      "category_name": "Beauty",
+      "description": "Cosmetics and personal care",
+      "status": 1
+    },
+    {
+      "id": 9,
+      "category_name": "Automotive",
+      "description": "Car parts and accessories",
+      "status": 1
+    },
+    {
+      "id": 10,
+      "category_name": "Jewelry",
+      "description": "Gold, silver and fashion jewelry",
+      "status": 1
+    },
+    {
+      "id": 11,
+      "category_name": "Home Appliances",
+      "description": "Kitchen and home appliances",
+      "status": 1
+    },
+    {
+      "id": 12,
+      "category_name": "Health",
+      "description": "Medical and health products",
+      "status": 1
+    },
+    {
+      "id": 13,
+      "category_name": "Pet Supplies",
+      "description": "Food and accessories for pets",
+      "status": 1
+    },
+    {
+      "id": 14,
+      "category_name": "Stationery",
+      "description": "Office and school supplies",
+      "status": 1
+    },
+    {
+      "id": 15,
+      "category_name": "Gardening",
+      "description": "Plants and gardening tools",
+      "status": 1
+    }
+  ],
+    "subCategories": [
+    { "id": 1, "main_category_id": 1, "sub_category_name": "Mobile Phones", "description": "Smartphones and feature phones", "status": 1 },
+    { "id": 2, "main_category_id": 1, "sub_category_name": "Laptops", "description": "Personal and business laptops", "status": 1 },
+    { "id": 3, "main_category_id": 1, "sub_category_name": "Televisions", "description": "LED, OLED, and Smart TVs", "status": 1 },
+    { "id": 4, "main_category_id": 2, "sub_category_name": "Men's Wear", "description": "Shirts, T-shirts, and trousers", "status": 1 },
+    { "id": 5, "main_category_id": 2, "sub_category_name": "Women's Wear", "description": "Dresses, tops, and skirts", "status": 1 },
+    { "id": 6, "main_category_id": 2, "sub_category_name": "Kids' Wear", "description": "Clothing for children and toddlers", "status": 1 },
+    { "id": 7, "main_category_id": 3, "sub_category_name": "Furniture", "description": "Sofas, tables, and chairs", "status": 1 },
+    { "id": 8, "main_category_id": 3, "sub_category_name": "Kitchen Appliances", "description": "Microwaves, mixers, and blenders", "status": 1 },
+    { "id": 9, "main_category_id": 3, "sub_category_name": "Home Decor", "description": "Wall art, lamps, and vases", "status": 1 },
+    { "id": 10, "main_category_id": 4, "sub_category_name": "Fitness Equipment", "description": "Treadmills, weights, and yoga mats", "status": 1 },
+    { "id": 11, "main_category_id": 4, "sub_category_name": "Outdoor Sports", "description": "Cricket, football, and badminton gear", "status": 1 },
+    { "id": 12, "main_category_id": 4, "sub_category_name": "Cycling", "description": "Bicycles and cycling accessories", "status": 1 },
+    { "id": 13, "main_category_id": 5, "sub_category_name": "Fiction", "description": "Novels and short stories", "status": 1 },
+    { "id": 14, "main_category_id": 5, "sub_category_name": "Non-Fiction", "description": "Biographies, self-help, and history", "status": 1 },
+    { "id": 15, "main_category_id": 5, "sub_category_name": "Children's Books", "description": "Books for kids and young readers", "status": 1 }
+  ],
+  
+  "payModes": [
+    {
+      "payment_method": "Cash",
+      "description": "Physical currency payments",
+      "status": 1
+    },
+    {
+      "payment_method": "Credit Card",
+      "description": "Visa, Mastercard, etc.",
+      "status": 1
+    },
+    {
+      "payment_method": "Debit Card",
+      "description": "Bank card payments",
+      "status": 1
+    },
+    {
+      "payment_method": "Bank Transfer",
+      "description": "Direct bank transfers",
+      "status": 1
+    },
+    {
+      "payment_method": "UPI",
+      "description": "Unified Payments Interface",
+      "status": 1
+    },
+    {
+      "payment_method": "PayPal",
+      "description": "Online payment system",
+      "status": 1
+    },
+    {
+      "payment_method": "Google Pay",
+      "description": "Google's payment app",
+      "status": 1
+    },
+    {
+      "payment_method": "Apple Pay",
+      "description": "Apple's payment system",
+      "status": 1
+    },
+    {
+      "payment_method": "PhonePe",
+      "description": "Popular UPI payment app in India",
+      "status": 1
+    },
+    {
+      "payment_method": "Amazon Pay",
+      "description": "Amazon's digital payment",
+      "status": 1
+    },
+    {
+      "payment_method": "Paytm",
+      "description": "Indian digital payment system",
+      "status": 1
+    },
+    {
+      "payment_method": "Cheque",
+      "description": "Paper check payments",
+      "status": 0
+    },
+    {
+      "payment_method": "Money Order",
+      "description": "Prepaid payment orders",
+      "status": 0
+    },
+    {
+      "payment_method": "Cryptocurrency",
+      "description": "Bitcoin, Ethereum, etc.",
+      "status": 1
+    },
+    {
+      "payment_method": "Gift Card",
+      "description": "Prepaid gift cards",
+      "status": 1
+    }
+  ],
+  "variants": [
+    {
+      "variant_name": "Color",
+      "option_values": "Red,Blue,Green,Black,White,Yellow,Pink",
+      "description": "Product color options"
+    },
+    {
+      "variant_name": "Size",
+      "option_values": "XS,S,M,L,XL,XXL",
+      "description": "Clothing size options"
+    },
+    {
+      "variant_name": "Material",
+      "option_values": "Cotton,Polyester,Wool,Silk,Leather",
+      "description": "Material composition options"
+    },
+    {
+      "variant_name": "Storage",
+      "option_values": "32GB,64GB,128GB,256GB,512GB,1TB",
+      "description": "Device storage capacity options"
+    },
+    {
+      "variant_name": "RAM",
+      "option_values": "4GB,8GB,16GB,32GB,64GB",
+      "description": "Memory size options"
+    },
+    {
+      "variant_name": "Processor",
+      "option_values": "i3,i5,i7,i9,Ryzen 5,Ryzen 7",
+      "description": "CPU type options"
+    },
+    {
+      "variant_name": "Screen Size",
+      "option_values": "13\",15\",17\",21\",24\",27\"",
+      "description": "Display size options"
+    },
+    {
+      "variant_name": "Resolution",
+      "option_values": "HD,Full HD,2K,4K,8K",
+      "description": "Display resolution options"
+    },
+    {
+      "variant_name": "Weight",
+      "option_values": "Light,Medium,Heavy",
+      "description": "Product weight categories"
+    },
+    {
+      "variant_name": "Style",
+      "option_values": "Classic,Modern,Vintage,Sporty,Formal",
+      "description": "Design style options"
+    },
+    {
+      "variant_name": "Gender",
+      "option_values": "Men,Women,Unisex,Kids",
+      "description": "Target gender options"
+    },
+    {
+      "variant_name": "Season",
+      "option_values": "Summer,Winter,Spring,Autumn,All Season",
+      "description": "Seasonal availability"
+    },
+    {
+      "variant_name": "Warranty",
+      "option_values": "6 Months,1 Year,2 Years,3 Years,Lifetime",
+      "description": "Warranty period options"
+    },
+    {
+      "variant_name": "Power",
+      "option_values": "Battery,AC,DC,Solar",
+      "description": "Power source options"
+    },
+    {
+      "variant_name": "Connection",
+      "option_values": "Bluetooth,WiFi,USB-C,HDMI,Thunderbolt",
+      "description": "Connectivity options"
+    }
+  ],
+  
+  "employees": [
+    {
+      "full_name": "John Smith",
+      "designation": "Software Engineer",
+      "department": "Development",
+      "mobile_number": "9876543210",
+      "email": "john.smith@example.com",
+      "joining_date": "2020-05-15",
+      "status": 1
+    },
+    {
+      "full_name": "Emily Johnson",
+      "designation": "HR Manager",
+      "department": "Human Resources",
+      "mobile_number": "8765432109",
+      "email": "emily.j@example.com",
+      "joining_date": "2019-11-22",
+      "status": 1
+    },
+    {
+      "full_name": "Michael Brown",
+      "designation": "Sales Executive",
+      "department": "Sales",
+      "mobile_number": "7654321098",
+      "email": "michael.b@example.com",
+      "joining_date": "2021-02-10",
+      "status": 1
+    },
+    {
+      "full_name": "Sarah Wilson",
+      "designation": "UX Designer",
+      "department": "Design",
+      "mobile_number": "6543210987",
+      "email": "sarah.w@example.com",
+      "joining_date": "2020-08-05",
+      "status": 1
+    },
+    {
+      "full_name": "David Lee",
+      "designation": "Project Manager",
+      "department": "Development",
+      "mobile_number": "5432109876",
+      "email": "david.lee@example.com",
+      "joining_date": "2018-07-30",
+      "status": 1
+    },
+    {
+      "full_name": "Jennifer Davis",
+      "designation": "Marketing Specialist",
+      "department": "Marketing",
+      "mobile_number": "4321098765",
+      "email": "jennifer.d@example.com",
+      "joining_date": "2021-01-18",
+      "status": 1
+    },
+    {
+      "full_name": "Robert Taylor",
+      "designation": "System Administrator",
+      "department": "IT",
+      "mobile_number": "3210987654",
+      "email": "robert.t@example.com",
+      "joining_date": "2019-03-12",
+      "status": 1
+    },
+    {
+      "full_name": "Lisa Anderson",
+      "designation": "Finance Manager",
+      "department": "Finance",
+      "mobile_number": "2109876543",
+      "email": "lisa.a@example.com",
+      "joining_date": "2017-09-25",
+      "status": 1
+    },
+    {
+      "full_name": "James Wilson",
+      "designation": "Quality Analyst",
+      "department": "Testing",
+      "mobile_number": "1098765432",
+      "email": "james.w@example.com",
+      "joining_date": "2020-10-08",
+      "status": 1
+    },
+    {
+      "full_name": "Patricia Martin",
+      "designation": "Content Writer",
+      "department": "Marketing",
+      "mobile_number": "0987654321",
+      "email": "patricia.m@example.com",
+      "joining_date": "2021-04-17",
+      "status": 1
+    },
+    {
+      "full_name": "Daniel Clark",
+      "designation": "DevOps Engineer",
+      "department": "Development",
+      "mobile_number": "9876543211",
+      "email": "daniel.c@example.com",
+      "joining_date": "2020-12-01",
+      "status": 1
+    },
+    {
+      "full_name": "Nancy Rodriguez",
+      "designation": "Recruiter",
+      "department": "Human Resources",
+      "mobile_number": "8765432101",
+      "email": "nancy.r@example.com",
+      "joining_date": "2021-03-22",
+      "status": 1
+    },
+    {
+      "full_name": "Kevin Martinez",
+      "designation": "Business Analyst",
+      "department": "Operations",
+      "mobile_number": "7654321091",
+      "email": "kevin.m@example.com",
+      "joining_date": "2019-06-14",
+      "status": 1
+    },
+    {
+      "full_name": "Karen White",
+      "designation": "UI Designer",
+      "department": "Design",
+      "mobile_number": "6543210981",
+      "email": "karen.w@example.com",
+      "joining_date": "2020-09-30",
+      "status": 0
+    },
+    {
+      "full_name": "Thomas Harris",
+      "designation": "Support Engineer",
+      "department": "Customer Support",
+      "mobile_number": "5432109871",
+      "email": "thomas.h@example.com",
+      "joining_date": "2021-05-05",
+      "status": 1
+    }
+  ],
+  
+  "incomes": [
+    {
+      "date": "2023-01-05",
+      "category_id": 1,
+      "subcategory_id": 1,
+      "variant_id": 1,
+      "payer_name": "John Smith",
+      "description": "Website development project",
+      "amount": 2500.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-001",
+      "status": 1
+    },
+    {
+      "date": "2023-01-12",
+      "category_id": 1,
+      "subcategory_id": 2,
+      "variant_id": 3,
+      "payer_name": "Acme Corp",
+      "description": "Monthly maintenance",
+      "amount": 1200.00,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-002",
+      "status": 1
+    },
+    {
+      "date": "2023-01-18",
+      "category_id": 2,
+      "subcategory_id": 4,
+      "variant_id": 6,
+      "payer_name": "Jane Doe",
+      "description": "Consulting services",
+      "amount": 850.50,
+      "payment_mode_id": 3,
+      "bill_id": "INV-2023-003",
+      "status": 1
+    },
+    {
+      "date": "2023-01-22",
+      "category_id": 3,
+      "subcategory_id": 7,
+      "variant_id": 9,
+      "payer_name": "Global Tech",
+      "description": "Software license sale",
+      "amount": 3200.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-004",
+      "status": 1
+    },
+    {
+      "date": "2023-02-03",
+      "category_id": 1,
+      "subcategory_id": 1,
+      "variant_id": 2,
+      "payer_name": "Beta Solutions",
+      "description": "Mobile app development",
+      "amount": 1800.00,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-005",
+      "status": 1
+    },
+    {
+      "date": "2023-02-10",
+      "category_id": 4,
+      "subcategory_id": 10,
+      "variant_id": 12,
+      "payer_name": "Delta Inc",
+      "description": "Training session",
+      "amount": 1500.00,
+      "payment_mode_id": 3,
+      "bill_id": "INV-2023-006",
+      "status": 1
+    },
+    {
+      "date": "2023-02-15",
+      "category_id": 2,
+      "subcategory_id": 5,
+      "variant_id": 7,
+      "payer_name": "Gamma LLC",
+      "description": "Business strategy consulting",
+      "amount": 2750.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-007",
+      "status": 1
+    },
+    {
+      "date": "2023-02-22",
+      "category_id": 1,
+      "subcategory_id": 3,
+      "variant_id": 5,
+      "payer_name": "Omega Systems",
+      "description": "Database optimization",
+      "amount": 2100.00,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-008",
+      "status": 1
+    },
+    {
+      "date": "2023-03-05",
+      "category_id": 3,
+      "subcategory_id": 8,
+      "variant_id": 10,
+      "payer_name": "Sigma Tech",
+      "description": "Annual software subscription",
+      "amount": 4800.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-009",
+      "status": 1
+    },
+    {
+      "date": "2023-03-12",
+      "category_id": 4,
+      "subcategory_id": 11,
+      "variant_id": 13,
+      "payer_name": "Theta Consulting",
+      "description": "Workshop facilitation",
+      "amount": 3200.00,
+      "payment_mode_id": 3,
+      "bill_id": "INV-2023-010",
+      "status": 1
+    },
+    {
+      "date": "2023-03-18",
+      "category_id": 2,
+      "subcategory_id": 6,
+      "variant_id": 8,
+      "payer_name": "Zeta Enterprises",
+      "description": "Market research",
+      "amount": 1950.00,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-011",
+      "status": 1
+    },
+    {
+      "date": "2023-03-25",
+      "category_id": 1,
+      "subcategory_id": 2,
+      "variant_id": 4,
+      "payer_name": "Epsilon Co",
+      "description": "Server maintenance",
+      "amount": 1350.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-012",
+      "status": 1
+    },
+    {
+      "date": "2023-04-02",
+      "category_id": 3,
+      "subcategory_id": 9,
+      "variant_id": 11,
+      "payer_name": "Kappa Solutions",
+      "description": "Software customization",
+      "amount": 3600.00,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-013",
+      "status": 1
+    },
+    {
+      "date": "2023-04-09",
+      "category_id": 4,
+      "subcategory_id": 12,
+      "variant_id": 14,
+      "payer_name": "Lambda Group",
+      "description": "Executive coaching",
+      "amount": 2800.00,
+      "payment_mode_id": 3,
+      "bill_id": "INV-2023-014",
+      "status": 1
+    },
+    {
+      "date": "2023-04-15",
+      "category_id": 2,
+      "subcategory_id": 5,
+      "variant_id": 7,
+      "payer_name": "Alpha Corp",
+      "description": "Management consulting",
+      "amount": 4200.00,
+      "payment_mode_id": 1,
+      "bill_id": "INV-2023-015",
+      "status": 0
+    }
+  ],
+  "categories": [
+    { "id": 1, "name": "IT Services" },
+    { "id": 2, "name": "Consulting" },
+    { "id": 3, "name": "Software" },
+    { "id": 4, "name": "Training" }
+  ],
+  "subcategories": [
+    { "id": 1, "name": "Web Development", "category_id": 1 },
+    { "id": 2, "name": "Maintenance", "category_id": 1 },
+    { "id": 3, "name": "Database", "category_id": 1 },
+    { "id": 4, "name": "Business", "category_id": 2 },
+    { "id": 5, "name": "Management", "category_id": 2 },
+    { "id": 6, "name": "Market Research", "category_id": 2 },
+    { "id": 7, "name": "Licenses", "category_id": 3 },
+    { "id": 8, "name": "Subscriptions", "category_id": 3 },
+    { "id": 9, "name": "Customization", "category_id": 3 },
+    { "id": 10, "name": "Technical", "category_id": 4 },
+    { "id": 11, "name": "Workshops", "category_id": 4 },
+    { "id": 12, "name": "Coaching", "category_id": 4 }
+  ],
+  "variants": [
+    { "id": 1, "name": "Basic Website", "subcategory_id": 1 },
+    { "id": 2, "name": "Mobile App", "subcategory_id": 1 },
+    { "id": 3, "name": "Monthly", "subcategory_id": 2 },
+    { "id": 4, "name": "Quarterly", "subcategory_id": 2 },
+    { "id": 5, "name": "MySQL", "subcategory_id": 3 },
+    { "id": 6, "name": "Strategy", "subcategory_id": 4 },
+    { "id": 7, "name": "Leadership", "subcategory_id": 5 },
+    { "id": 8, "name": "Consumer", "subcategory_id": 6 },
+    { "id": 9, "name": "Single User", "subcategory_id": 7 },
+    { "id": 10, "name": "Enterprise", "subcategory_id": 8 },
+    { "id": 11, "name": "Module", "subcategory_id": 9 },
+    { "id": 12, "name": "Beginner", "subcategory_id": 10 },
+    { "id": 13, "name": "Advanced", "subcategory_id": 11 },
+    { "id": 14, "name": "Executive", "subcategory_id": 12 }
+  ],
+  "payment_modes": [
+    { "id": 1, "name": "Bank Transfer" },
+    { "id": 2, "name": "Credit Card" },
+    { "id": 3, "name": "PayPal" },
+    { "id": 4, "name": "Cash" },
+    { "id": 5, "name": "Check" }
+  ],
+  "expenditures": [
+    {
+      "id": 1,
+      "date": "2023-01-15",
+      "category_id": 1,
+      "subcategory_id": 1,
+      "variant_id": 1,
+      "payee_name": "Office Supplies Inc.",
+      "description": "Printer paper and stationery",
+      "amount": 125.50,
+      "payment_mode_id": 2,
+      "bill_id": "INV-2023-001",
+      "status": 1,
+      "created_at": "2023-01-15T10:30:00Z",
+      "updated_at": "2023-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "date": "2023-01-18",
+      "category_id": 2,
+      "subcategory_id": 3,
+      "variant_id": 5,
+      "payee_name": "Cloud Hosting Solutions",
+      "description": "Monthly server hosting",
+      "amount": 299.00,
+      "payment_mode_id": 1,
+      "bill_id": "CHS-78945",
+      "status": 1,
+      "created_at": "2023-01-18T09:15:00Z",
+      "updated_at": "2023-01-18T09:15:00Z"
+    },
+    {
+      "id": 3,
+      "date": "2023-01-20",
+      "category_id": 3,
+      "subcategory_id": 6,
+      "variant_id": 9,
+      "payee_name": "Joe's Marketing Agency",
+      "description": "Social media campaign",
+      "amount": 1500.00,
+      "payment_mode_id": 3,
+      "bill_id": "JMA-2023-012",
+      "status": 1,
+      "created_at": "2023-01-20T14:20:00Z",
+      "updated_at": "2023-01-20T14:20:00Z"
+    },
+    {
+      "id": 4,
+      "date": "2023-01-22",
+      "category_id": 4,
+      "subcategory_id": 8,
+      "variant_id": 12,
+      "payee_name": "City Utilities",
+      "description": "Monthly electricity bill",
+      "amount": 350.75,
+      "payment_mode_id": 2,
+      "bill_id": "UTL-456789",
+      "status": 1,
+      "created_at": "2023-01-22T08:45:00Z",
+      "updated_at": "2023-01-22T08:45:00Z"
+    },
+    {
+      "id": 5,
+      "date": "2023-01-25",
+      "category_id": 5,
+      "subcategory_id": 10,
+      "variant_id": 15,
+      "payee_name": "Tech Equipment Co.",
+      "description": "New laptop for developer",
+      "amount": 2200.00,
+      "payment_mode_id": 1,
+      "bill_id": "TEC-789456",
+      "status": 1,
+      "created_at": "2023-01-25T11:30:00Z",
+      "updated_at": "2023-01-25T11:30:00Z"
+    },
+    {
+      "id": 6,
+      "date": "2023-01-28",
+      "category_id": 1,
+      "subcategory_id": 2,
+      "variant_id": 3,
+      "payee_name": "Coffee Supply Co.",
+      "description": "Office coffee supplies",
+      "amount": 85.25,
+      "payment_mode_id": 2,
+      "bill_id": "CSC-2023-006",
+      "status": 1,
+      "created_at": "2023-01-28T13:15:00Z",
+      "updated_at": "2023-01-28T13:15:00Z"
+    },
+    {
+      "id": 7,
+      "date": "2023-02-01",
+      "category_id": 2,
+      "subcategory_id": 4,
+      "variant_id": 7,
+      "payee_name": "Software Licenses Inc.",
+      "description": "Annual software subscription",
+      "amount": 1200.00,
+      "payment_mode_id": 3,
+      "bill_id": "SLI-2023-045",
+      "status": 1,
+      "created_at": "2023-02-01T10:00:00Z",
+      "updated_at": "2023-02-01T10:00:00Z"
+    },
+    {
+      "id": 8,
+      "date": "2023-02-05",
+      "category_id": 3,
+      "subcategory_id": 7,
+      "variant_id": 10,
+      "payee_name": "Digital Ads Network",
+      "description": "Google Ads campaign",
+      "amount": 750.00,
+      "payment_mode_id": 1,
+      "bill_id": "DAN-789123",
+      "status": 1,
+      "created_at": "2023-02-05T15:30:00Z",
+      "updated_at": "2023-02-05T15:30:00Z"
+    },
+    {
+      "id": 9,
+      "date": "2023-02-10",
+      "category_id": 4,
+      "subcategory_id": 9,
+      "variant_id": 13,
+      "payee_name": "Water Services Ltd.",
+      "description": "Monthly water bill",
+      "amount": 125.50,
+      "payment_mode_id": 2,
+      "bill_id": "WTR-456123",
+      "status": 1,
+      "created_at": "2023-02-10T09:45:00Z",
+      "updated_at": "2023-02-10T09:45:00Z"
+    },
+    {
+      "id": 10,
+      "date": "2023-02-15",
+      "category_id": 5,
+      "subcategory_id": 11,
+      "variant_id": 16,
+      "payee_name": "Office Furniture World",
+      "description": "New ergonomic chairs",
+      "amount": 1800.00,
+      "payment_mode_id": 1,
+      "bill_id": "OFW-2023-015",
+      "status": 1,
+      "created_at": "2023-02-15T14:00:00Z",
+      "updated_at": "2023-02-15T14:00:00Z"
+    },
+    {
+      "id": 11,
+      "date": "2023-02-20",
+      "category_id": 1,
+      "subcategory_id": 1,
+      "variant_id": 2,
+      "payee_name": "Printing Solutions",
+      "description": "Business cards and brochures",
+      "amount": 320.00,
+      "payment_mode_id": 3,
+      "bill_id": "PS-2023-020",
+      "status": 1,
+      "created_at": "2023-02-20T11:20:00Z",
+      "updated_at": "2023-02-20T11:20:00Z"
+    },
+    {
+      "id": 12,
+      "date": "2023-02-25",
+      "category_id": 2,
+      "subcategory_id": 5,
+      "variant_id": 8,
+      "payee_name": "Web Security Pro",
+      "description": "SSL certificates renewal",
+      "amount": 450.00,
+      "payment_mode_id": 2,
+      "bill_id": "WSP-789456",
+      "status": 1,
+      "created_at": "2023-02-25T16:30:00Z",
+      "updated_at": "2023-02-25T16:30:00Z"
+    },
+    {
+      "id": 13,
+      "date": "2023-03-01",
+      "category_id": 3,
+      "subcategory_id": 6,
+      "variant_id": 11,
+      "payee_name": "Content Creators LLC",
+      "description": "Blog content creation",
+      "amount": 800.00,
+      "payment_mode_id": 1,
+      "bill_id": "CC-2023-025",
+      "status": 1,
+      "created_at": "2023-03-01T10:15:00Z",
+      "updated_at": "2023-03-01T10:15:00Z"
+    },
+    {
+      "id": 14,
+      "date": "2023-03-05",
+      "category_id": 4,
+      "subcategory_id": 8,
+      "variant_id": 14,
+      "payee_name": "Internet Provider Inc.",
+      "description": "Monthly internet service",
+      "amount": 199.99,
+      "payment_mode_id": 3,
+      "bill_id": "IPI-456789",
+      "status": 1,
+      "created_at": "2023-03-05T09:00:00Z",
+      "updated_at": "2023-03-05T09:00:00Z"
+    },
+    {
+      "id": 15,
+      "date": "2023-03-10",
+      "category_id": 5,
+      "subcategory_id": 12,
+      "variant_id": 17,
+      "payee_name": "Tech Support Services",
+      "description": "Annual maintenance contract",
+      "amount": 3000.00,
+      "payment_mode_id": 1,
+      "bill_id": "TSS-2023-030",
+      "status": 1,
+      "created_at": "2023-03-10T14:45:00Z",
+      "updated_at": "2023-03-10T14:45:00Z"
+    }
+  ],
+  "categories": [
+    { "id": 1, "name": "Office Supplies" },
+    { "id": 2, "name": "Software" },
+    { "id": 3, "name": "Marketing" },
+    { "id": 4, "name": "Utilities" },
+    { "id": 5, "name": "Equipment" }
+  ],
+  "subcategories": [
+    { "id": 1, "name": "Stationery", "category_id": 1 },
+    { "id": 2, "name": "Beverages", "category_id": 1 },
+    { "id": 3, "name": "Hosting", "category_id": 2 },
+    { "id": 4, "name": "Licenses", "category_id": 2 },
+    { "id": 5, "name": "Security", "category_id": 2 },
+    { "id": 6, "name": "Digital Ads", "category_id": 3 },
+    { "id": 7, "name": "Content", "category_id": 3 },
+    { "id": 8, "name": "Electricity", "category_id": 4 },
+    { "id": 9, "name": "Water", "category_id": 4 },
+    { "id": 10, "name": "Computers", "category_id": 5 },
+    { "id": 11, "name": "Furniture", "category_id": 5 },
+    { "id": 12, "name": "Maintenance", "category_id": 5 }
+  ],
+  "variants": [
+    { "id": 1, "name": "Paper Products", "subcategory_id": 1 },
+    { "id": 2, "name": "Printing", "subcategory_id": 1 },
+    { "id": 3, "name": "Coffee", "subcategory_id": 2 },
+    { "id": 4, "name": "Shared Hosting", "subcategory_id": 3 },
+    { "id": 5, "name": "VPS Hosting", "subcategory_id": 3 },
+    { "id": 6, "name": "Productivity", "subcategory_id": 4 },
+    { "id": 7, "name": "Design", "subcategory_id": 4 },
+    { "id": 8, "name": "SSL", "subcategory_id": 5 },
+    { "id": 9, "name": "Social Media", "subcategory_id": 6 },
+    { "id": 10, "name": "Search Ads", "subcategory_id": 6 },
+    { "id": 11, "name": "Blog Writing", "subcategory_id": 7 },
+    { "id": 12, "name": "Commercial", "subcategory_id": 8 },
+    { "id": 13, "name": "Residential", "subcategory_id": 9 },
+    { "id": 14, "name": "Fiber", "subcategory_id": 8 },
+    { "id": 15, "name": "Laptops", "subcategory_id": 10 },
+    { "id": 16, "name": "Chairs", "subcategory_id": 11 },
+    { "id": 17, "name": "Support", "subcategory_id": 12 }
+  ],
+  "payment_modes": [
+    { "id": 1, "name": "Credit Card" },
+    { "id": 2, "name": "Bank Transfer" },
+    { "id": 3, "name": "Check" },
+    { "id": 4, "name": "Cash" },
+    { "id": 5, "name": "Digital Wallet" }
+  ]
+
+
+}
+
+

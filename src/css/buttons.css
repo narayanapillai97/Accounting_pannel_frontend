@@ -1,0 +1,258 @@
+/* Core Base Style */
+.s-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  margin-right: 12px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  text-decoration: none;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+  color: white;
+}
+
+/* Base Hover Effects */
+.s-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.s-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.s-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ========== Basic Buttons ========== */
+.s-btn-primary {
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+}
+
+.s-btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+}
+
+.s-btn-success {
+  background: linear-gradient(135deg, #28a745, #218838);
+}
+
+.s-btn-danger {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.s-btn-warning {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+}
+
+.s-btn-info {
+  background: linear-gradient(135deg, #17a2b8, #117a8b);
+}
+
+.s-btn-light {
+  background: linear-gradient(135deg, #f8f9fa, #dee2e6);
+  color: #212529;
+}
+
+.s-btn-dark {
+  background: linear-gradient(135deg, #343a40, #1d2124);
+}
+
+/* ========== Gradient Buttons ========== */
+.s-btn-grad-primary {
+  background: linear-gradient(135deg, #5f2c82, #49a09d);
+}
+
+.s-btn-grad-success {
+  background: linear-gradient(135deg, #56ab2f, #a8e063);
+}
+
+.s-btn-grad-danger {
+  background: linear-gradient(135deg, #cb2d3e, #ef473a);
+}
+
+.s-btn-grad-warning {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  color: #212529;
+}
+
+/* ========== Outline Buttons ========== */
+.s-btn-outline-primary {
+  background: transparent;
+  border: 2px solid #4361ee;
+  color: #4361ee;
+}
+
+.s-btn-outline-primary:hover {
+  background: #4361ee;
+  color: white;
+}
+
+.s-btn-outline-secondary {
+  background: transparent;
+  border: 2px solid #6c757d;
+  color: #6c757d;
+}
+
+.s-btn-outline-secondary:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.s-btn-outline-success {
+  background: transparent;
+  border: 2px solid #28a745;
+  color: #28a745;
+}
+
+.s-btn-outline-success:hover {
+  background: #28a745;
+  color: white;
+}
+
+.s-btn-outline-danger {
+  background: transparent;
+  border: 2px solid #dc3545;
+  color: #dc3545;
+}
+
+.s-btn-outline-danger:hover {
+  background: #dc3545;
+  color: white;
+}
+
+/* ========== 3D Buttons ========== */
+.s-btn-3d-primary {
+  background: linear-gradient(to bottom, #4361ee, #3a0ca3);
+  box-shadow: 0 6px #2c2891;
+}
+
+.s-btn-3d-success {
+  background: linear-gradient(to bottom, #28a745, #218838);
+  box-shadow: 0 6px #18632d;
+}
+
+.s-btn-3d-danger {
+  background: linear-gradient(to bottom, #dc3545, #c82333);
+  box-shadow: 0 6px #991f2b;
+}
+
+/* ========== Animated Buttons ========== */
+.s-btn-animate-fill {
+  background: transparent;
+  color: #4361ee;
+  border: 2px solid #4361ee;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.s-btn-animate-fill::before {
+  content: "";
+  position: absolute;
+  background: #4361ee;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  z-index: -1;
+  transition: width 0.4s ease;
+}
+
+.s-btn-animate-fill:hover::before {
+  width: 100%;
+}
+
+.s-btn-animate-slide {
+  background: #fff;
+  color: #4361ee;
+  border: 2px solid #4361ee;
+  transition: all 0.4s ease;
+}
+
+.s-btn-animate-slide:hover {
+  background: #4361ee;
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.s-btn-animate-shine {
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+  overflow: hidden;
+}
+
+.s-btn-animate-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease-in-out;
+}
+
+.s-btn-animate-shine:hover::after {
+  left: 125%;
+}
+
+/* ========== Icon Buttons ========== */
+.s-btn-icon i {
+  margin-right: 8px;
+}
+
+.s-btn-icon-right i {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+.s-btn-icon-only {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.s-btn {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.s-btn-outline-primary:focus,
+.s-btn-outline-secondary:focus,
+.s-btn-outline-success:focus,
+.s-btn-outline-danger:focus {
+  outline: 2px solid currentColor !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+.btn-custom-blue {
+  background-color: #007bff !important;
+  border-color: #007bff !important;
+  color: #fff !important;
+}
+
+.btn-bill {
+  color: orange !important;
+  border-color: orange !important;
+}
+
+.btn-bill:hover {
+  background-color: orange !important;
+  color: #fff !important;
+}
+

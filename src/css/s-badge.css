@@ -1,0 +1,397 @@
+/* Stylish Badges CSS - s-badge classes */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+/* Base Badge Styles */
+.s-badge {
+    font-family: 'Poppins', sans-serif;
+    display: inline-block;
+    padding: 0.4em 0.8em;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    outline: none;
+    position: relative;
+    overflow: hidden;
+    margin: 0.25rem;
+}
+
+/* Size Variations */
+.s-size-tiny { 
+    padding: 0.2em 0.4em; 
+    font-size: 0.6em; 
+    border-radius: 8px;
+}
+
+.s-size-small { 
+    padding: 0.3em 0.6em; 
+    font-size: 0.7em; 
+    border-radius: 10px;
+}
+
+.s-size-medium { 
+    padding: 0.4em 0.8em; 
+    font-size: 0.85em; 
+    border-radius: 12px;
+}
+
+.s-size-large { 
+    padding: 0.6em 1.2em; 
+    font-size: 1.1em; 
+    border-radius: 15px;
+}
+
+.s-size-huge { 
+    padding: 0.8em 1.6em; 
+    font-size: 1.3em; 
+    border-radius: 18px;
+}
+
+/* Glowing Badge */
+.s-badge-glow {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.4);
+    position: relative;
+}
+
+.s-badge-glow::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.s-badge-glow:hover::before {
+    left: 100%;
+}
+
+.s-badge-glow:hover {
+    box-shadow: 0 0 25px rgba(0, 123, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Neon Badge */
+.s-badge-neon {
+    background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+    color: white;
+    border: none;
+    box-shadow: 0 0 20px rgba(255, 0, 110, 0.5);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    animation: s-neonPulse 2s infinite alternate;
+}
+
+@keyframes s-neonPulse {
+    from { 
+        box-shadow: 0 0 20px rgba(255, 0, 110, 0.5);
+        transform: scale(1);
+    }
+    to { 
+        box-shadow: 0 0 30px rgba(255, 0, 110, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+/* Glass Badge */
+.s-badge-glass {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.s-badge-glass:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+/* Gradient Badge */
+.s-badge-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: perspective(1px) translateZ(0);
+}
+
+.s-badge-gradient:hover {
+    transform: scale(1.1) perspective(1px) translateZ(0);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Shadow Badge */
+.s-badge-shadow {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.s-badge-shadow:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    transform: translateY(-5px);
+}
+
+.s-badge-shadow.s-success {
+    background: #28a745;
+}
+
+.s-badge-shadow.s-danger {
+    background: #dc3545;
+}
+
+.s-badge-shadow.s-warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.s-badge-shadow.s-info {
+    background: #17a2b8;
+}
+
+.s-badge-shadow.s-secondary {
+    background: #6c757d;
+}
+
+/* Metallic Badge */
+.s-badge-metallic {
+    background: linear-gradient(145deg, #e6e6e6, #ffffff);
+    box-shadow: 
+        5px 5px 10px #d1d1d1,
+        -5px -5px 10px #ffffff,
+        inset 2px 2px 5px rgba(255, 255, 255, 0.7),
+        inset -2px -2px 5px rgba(0, 0, 0, 0.1);
+    color: #333;
+    border: none;
+}
+
+.s-badge-metallic:hover {
+    background: linear-gradient(145deg, #f0f0f0, #e6e6e6);
+    transform: translateY(-1px);
+}
+
+/* Outlined Badge */
+.s-badge-outlined {
+    background: transparent;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.s-badge-outlined.s-primary {
+    border-color: #007bff;
+    color: #007bff;
+}
+
+.s-badge-outlined.s-primary:hover {
+    background: #007bff;
+    color: white;
+}
+
+.s-badge-outlined.s-success {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.s-badge-outlined.s-success:hover {
+    background: #28a745;
+    color: white;
+}
+
+.s-badge-outlined.s-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.s-badge-outlined.s-danger:hover {
+    background: #dc3545;
+    color: white;
+}
+
+.s-badge-outlined.s-warning {
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.s-badge-outlined.s-warning:hover {
+    background: #ffc107;
+    color: #333;
+}
+
+.s-badge-outlined.s-info {
+    border-color: #17a2b8;
+    color: #17a2b8;
+}
+
+.s-badge-outlined.s-info:hover {
+    background: #17a2b8;
+    color: white;
+}
+
+/* Pulse Animation Badge */
+.s-badge-pulse {
+    background: #28a745;
+    color: white;
+    animation: s-pulse 1.5s infinite;
+}
+
+@keyframes s-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+/* Bounce Animation Badge */
+.s-badge-bounce {
+    background: #ff6b6b;
+    color: white;
+    animation: s-bounce 2s infinite;
+}
+
+@keyframes s-bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Rotate Animation Badge */
+.s-badge-rotate {
+    background: #4ecdc4;
+    color: white;
+    animation: s-rotate 3s linear infinite;
+}
+
+@keyframes s-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Flip Badge */
+.s-badge-flip {
+    background: #45b7d1;
+    color: white;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.s-badge-flip:hover {
+    transform: rotateY(180deg);
+}
+
+/* 3D Badge */
+.s-badge-3d {
+    background: linear-gradient(145deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+    color: #333;
+    box-shadow: 
+        0 8px 16px rgba(0, 0, 0, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.06);
+    transform: perspective(1000px) rotateX(15deg);
+    transition: all 0.3s ease;
+}
+
+.s-badge-3d:hover {
+    transform: perspective(1000px) rotateX(0deg) translateY(-5px);
+    box-shadow: 
+        0 12px 24px rgba(0, 0, 0, 0.15),
+        0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Morphing Badge */
+.s-badge-morph {
+    background: #667eea;
+    color: white;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.s-badge-morph:hover {
+    border-radius: 5px;
+    background: #764ba2;
+    transform: scale(1.1);
+}
+
+/* Liquid Badge */
+.s-badge-liquid {
+    background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.s-badge-liquid::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.s-badge-liquid:hover::before {
+    transform: translateX(100%);
+}
+
+/* Utility Classes */
+.s-badge-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.s-badge-center {
+    justify-content: center;
+}
+
+.s-badge-left {
+    justify-content: flex-start;
+}
+
+.s-badge-right {
+    justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .s-badge {
+        font-size: 0.75em;
+        padding: 0.3em 0.6em;
+    }
+    
+    .s-size-tiny { font-size: 0.5em; }
+    .s-size-small { font-size: 0.6em; }
+    .s-size-medium { font-size: 0.75em; }
+    .s-size-large { font-size: 0.9em; }
+    .s-size-huge { font-size: 1.1em; }
+}

@@ -1,0 +1,281 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+:root{
+  --s-red: #dc3545;
+  --s-red-dark: #c82333;
+  --s-text: #111827;
+  --s-muted: #6b7280;
+  --s-border: #e5e7eb;
+  --s-border-soft: #f3f4f6;
+  --s-bg: #ffffff;
+  --s-bg-soft: #f9fafb;
+}
+
+html, body {
+  font-family: 'Poppins', sans-serif !important;
+  color: var(--s-text);
+  background: #f9f9f9;
+}
+
+/* ===== Card ===== */
+.s-card { background: var(--s-bg); border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,.08); margin-bottom: 20px; }
+.s-card-body { padding: 20px; }
+
+/* ===== Buttons ===== */
+.s-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  font: 500 14px 'Poppins', sans-serif;
+  border-radius: 12px; padding:10px 18px; border:1px solid transparent; cursor:pointer;
+  transition: .2s ease-in-out; text-decoration:none;
+}
+
+/* Red gradient primary */
+.s-btn.s-btn-primary{
+  background: linear-gradient(90deg, var(--s-red), var(--s-red-dark)) !important;
+  color:#fff !important; border:none !important;
+  box-shadow: 0 4px 10px rgba(220,53,69,.25);
+}
+.s-btn.s-btn-primary:hover{
+  background: linear-gradient(90deg, var(--s-red-dark), var(--s-red)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(200,35,51,.35);
+}
+
+/* Icon-sized buttons in toolbar */
+.s-btn-icon{ width:48px; height:48px; padding:0; border-radius:14px; }
+
+/* Ghost (faint) danger button for Discard */
+.s-btn-ghost-danger{
+  background:#fff; color: var(--s-red); border:1px solid var(--s-red);
+}
+.s-btn-ghost-danger:hover{
+  background: rgba(220,53,69,.06);
+}
+
+/* Blocks / sizes */
+.s-btn-block{ width:100%; display:block; }
+.s-btn-lg{ padding:14px 20px; font-size:15px; font-weight:600; }
+.s-btn-pill{ border-radius: 14px; }
+
+/* Group */
+.s-btn-group{ display:inline-flex; gap:10px; }
+
+/* ===== Badges ===== */
+.s-badge{ display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:600; }
+.s-badge-primary{ background: var(--s-red); color:#fff; }
+.s-badge-sm{ font-size:10px; padding:2px 6px; }
+
+/* ===== Mail list / Nav ===== */
+.s-mail-list{ border:1px solid var(--s-border); background:#fff; }
+.s-rounded{ border-radius:10px; overflow:hidden; }
+
+.s-list-group-item{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; font-size:14px; color:#374151; text-decoration:none;
+  border-bottom:1px solid var(--s-border-soft); transition: background .2s;
+}
+.s-list-group-item:hover{ background: var(--s-bg-soft); }
+.s-list-group-item.s-active{
+  background:#f8d7da; /* light red */
+  font-weight:600;
+}
+
+.s-icon-18{ font-size:18px; }
+
+/* Section title */
+.s-intro-title h5{ font-size:14px; font-weight:600; margin:0; color:var(--s-text); }
+.s-intro-title i{ color: var(--s-muted); cursor:pointer; }
+
+/* Colored dots */
+.s-icon-warning i{ color:#f59e0b; }
+.s-icon-primary i{ color: var(--s-red); }
+.s-icon-success i{ color:#10b981; }
+.s-icon-dpink i{ color:#ec4899; }
+
+/* ===== Forms ===== */
+.s-form-group{ width:100%; }
+.s-form-control{
+  width:100%; border:1px solid #d1d5db; border-radius:10px;
+  padding:12px 14px; font-size:14px; background:#fff;
+}
+.s-form-control:focus{
+  border-color: var(--s-red) !important;
+  outline:none; box-shadow:0 0 0 3px rgba(220,53,69,.18);
+}
+.s-bg-transparent{ background-color:transparent; }
+.s-textarea-editor{ resize:vertical; }
+
+/* ===== Layout specifics ===== */
+.s-email-left-box{ border-right:1px solid var(--s-border); padding-right:15px; }
+.s-email-right-box{ padding-left:15px; }
+.s-toolbar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.s-compose-content{ margin-top:20px; }
+
+/* Small util */
+.s-p-0{ padding:0 !important; }
+
+/* Ensure Dropdown toggles inherit our red primary style */
+.s-btn.dropdown-toggle::after{ margin-left:8px; }
+
+/* Email List Styles */
+.s-email-list {
+  border: 1px solid var(--s-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.s-message {
+  border-bottom: 1px solid var(--s-border-soft);
+  padding: 12px 15px;
+  transition: background 0.2s;
+}
+
+.s-message:hover {
+  background: var(--s-bg-soft);
+}
+
+.s-message.s-unread {
+  background: #f8f9fa;
+}
+
+.s-message-single {
+  display: flex;
+  align-items: center;
+}
+
+.s-col-mail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-decoration: none;
+  color: var(--s-text);
+}
+
+.s-col-mail-2 {
+  width: calc(100% - 60px);
+}
+
+.s-subject {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 80%;
+  font-size: 14px;
+}
+
+.s-date {
+  font-size: 13px;
+  color: var(--s-muted);
+}
+
+/* Form Check */
+.s-form-check {
+  position: relative;
+  display: inline-block;
+}
+
+.s-form-check-input {
+  position: absolute;
+  opacity: 0;
+  z-index: -1;
+}
+
+.s-form-check-label {
+  position: relative;
+  margin-bottom: 0;
+  vertical-align: top;
+  cursor: pointer;
+}
+
+.s-form-check-label:before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--s-border);
+  border-radius: 4px;
+  background-color: #fff;
+  vertical-align: middle;
+}
+
+.s-form-check-input:checked + .s-form-check-label:before {
+  background-color: var(--s-red);
+  border-color: var(--s-red);
+}
+
+.s-form-check-input:checked + .s-form-check-label:after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Pagination */
+.s-pagination {
+  display: flex;
+  padding-left: 0;
+  list-style: none;
+}
+
+.s-page-item {
+  margin: 0 3px;
+}
+
+.s-page-link {
+  position: relative;
+  display: block;
+  padding: 5px 10px;
+  color: var(--s-red);
+  text-decoration: none;
+  background-color: #fff;
+  border: 1px solid var(--s-border);
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.s-page-item.s-active .s-page-link {
+  background: linear-gradient(90deg, var(--s-red), var(--s-red-dark));
+  color: #fff;
+  border-color: var(--s-red);
+}
+
+.s-page-link:hover {
+  background-color: var(--s-bg-soft);
+}
+
+.s-page-indicator .s-page-link {
+  padding: 5px 12px;
+}
+
+.s-no-bg {
+  background-color: transparent !important;
+}
+
+.s-pagination-sm .s-page-link {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+.s-pagination-primary .s-page-item.s-active .s-page-link {
+  background: linear-gradient(90deg, var(--s-red), var(--s-red-dark));
+  color: #fff;
+}
+
+.s-pagination-gutter .s-page-item {
+  margin: 0 2px;
+}
+
+/* Utility Classes */
+.s-d-none {
+  display: none !important;
+}
+
+.s-float-end {
+  float: right !important;
+}

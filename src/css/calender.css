@@ -1,0 +1,85 @@
+/* Google Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* Base Styles */
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* Animation */
+@keyframes s-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.s-animated-fadeIn {
+  animation: s-fadeIn 0.3s;
+}
+
+/* Card Styles */
+.s-card {
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(220, 53, 69, 0.1);
+}
+
+.s-card-header {
+  background-color: rgba(220, 53, 69, 0.05);
+  border-bottom: 1px solid rgba(220, 53, 69, 0.1);
+}
+
+/* ===== Red Event Theme (shared for external pills & calendar events) ===== */
+.s-event-red,
+.fc .s-event-red {
+  background-color: #dc3545 !important;
+  border-color: #c82333 !important;
+  color: #fff !important;
+}
+
+.s-event-red:hover,
+.fc .s-event-red:hover {
+  background-color: #c82333 !important;
+  border-color: #bd2130 !important;
+  color: #fff !important;
+}
+
+/* External pills sizing/spacing */
+.s-external-pill {
+  cursor: grab;
+  user-select: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+/* Calendar container */
+.s-demo-app-calendar {
+  background-color: white;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(220, 53, 69, 0.1);
+}
+
+/* FullCalendar Buttons (Prev/Next/Today) */
+.fc .fc-button {
+  background-color: #dc3545;
+  border-color: #c82333;
+  color: white;
+}
+
+.fc .fc-button:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #bd2130;
+  border-color: #b21f2d;
+}
+
+/* (Extra safety) Default event colors if no class is applied */
+.fc .fc-event,
+.fc .fc-event-dot {
+  background-color: #dc3545 !important;
+  border-color: #c82333 !important;
+  color: #fff !important;
+}

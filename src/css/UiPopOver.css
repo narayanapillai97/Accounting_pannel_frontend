@@ -1,0 +1,102 @@
+/* UiPopOver.css */
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Playfair+Display:wght@400;700&family=Orbitron:wght@500&family=Inter:wght@400;500&display=swap');
+
+/* Main Wrapper */
+.bootstrap-popover-wrapper {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+/* Button Container */
+.bootstrap-popover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Buttons */
+.bootstrap-popover > button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.bootstrap-popover > button:hover,
+.bootstrap-popover > button:focus {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+/* Tooltip Base */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip .tooltip-inner {
+  font-weight: 500;
+  font-size: 0.9rem;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  letter-spacing: 0.02em;
+}
+
+/* Tooltip Header */
+.tooltip-header {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 1.12rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Modern Style */
+.s-modern .tooltip-inner {
+  font-family: 'Poppins', sans-serif;
+  background-color: #4a5568;
+  color: #eef2f7;
+  border: none;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* Vintage Style */
+.s-vintage .tooltip-inner {
+  font-family: 'Playfair Display', serif;
+  background-color: #faf6ee;
+  color: #6c584c;
+  border: 1px solid #cbb994;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Futuristic Style */
+.s-futuristic .tooltip-inner {
+  font-family: 'Orbitron', sans-serif;
+  background-color: #0f172a;
+  color: #5dd3f3;
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 15px rgba(61,202,255,0.7);
+  letter-spacing: 1.5px;
+}
+
+/* Minimal Style */
+.s-minimal .tooltip-inner {
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 6px rgba(100, 116, 139, 0.15);
+}
+
+/* Tooltip Arrows */
+.tooltip .arrow::before {
+  border-width: 0.5rem !important;
+}
+
+/* Style Title */
+.fw-semibold.text-uppercase {
+  letter-spacing: 0.05em;
+}

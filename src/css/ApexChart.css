@@ -1,0 +1,75 @@
+/* Import Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+/* Base styles */
+.apex-chart-container {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f8f9fa;
+  padding: 20px;
+  min-height: 80vh;
+}
+
+/* Grid layout */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+  gap: 20px;
+}
+
+/* Chart column */
+.chart-col {
+  min-width: 0; /* Prevent overflow */
+}
+
+/* Card styles */
+.chart-card {
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  border: none;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header styles */
+.chart-header {
+  background-color: #4a6cf7;
+  color: white;
+  border-radius: 10px 10px 0 0;
+  padding: 15px 20px;
+}
+
+.chart-title {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Body styles */
+.chart-body {
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 0 0 10px 10px;
+  flex-grow: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .chart-grid {
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Special case for pie chart with mt-5 */
+.mt-5 {
+  margin-top: 3rem;
+}

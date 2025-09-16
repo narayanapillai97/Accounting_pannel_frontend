@@ -1,0 +1,28 @@
+.s-card {
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+  transition: 0.3s ease;
+}
+
+.s-card:hover {
+  box-shadow: 0 0 15px rgba(226, 52, 40, 0.2);
+}
+
+/* .s-card-header {
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 20px;
+}
+
+.s-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+} */
+
+.s-card-body {
+  padding: 20px;
+}
