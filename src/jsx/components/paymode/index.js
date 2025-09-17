@@ -1,11 +1,13 @@
 import React, { Fragment, useState, useEffect, useMemo } from "react";
-import { Table, Card, Row, Col, Button, Form, Badge, Alert, InputGroup } from "react-bootstrap";
+import { Table, Card, Row, Col, Button, Form, Badge, Alert, InputGroup, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import PageTitle from "../../layouts/PageTitle";
 import avatar1 from "../../../images/avatar/1.jpg";
 import avatar2 from "../../../images/avatar/2.jpg";
 import { X, Search } from "lucide-react";
-import Data from "../../../../src/jsx/components/data/data.json"; 
+
+// API base URL
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008/";
 
 const PayModeMaster = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -15,20 +17,45 @@ const PayModeMaster = () => {
   const [selectedPayMode, setSelectedPayMode] = useState(null);
   const [errors, setErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
   const [newPayMode, setNewPayMode] = useState({
     payment_method: "",
     description: "",
     status: 1
   });
 
-  const [payModes, setPayModes] = useState(
-    Data["payModes"]?.map((item, index) => ({
-      id: index + 1,
-      payment_method: item.payment_method || "",
-      description: item.description || "",
-      status: item.status === 1 ? 1 : 0
-    })) || []
-  );
+  const [payModes, setPayModes] = useState([]);
+
+  // Fetch payment methods from API
+  useEffect(() => {
+    fetchPayModes();
+  }, []);
+
+  const fetchPayModes = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}paymode/get`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPayModes(data);
+      setApiError("");
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+      setApiError("Failed to load payment methods. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter pay modes based on search term
   const filteredPayModes = useMemo(() => {
@@ -84,26 +111,80 @@ const PayModeMaster = () => {
     }, 300);
   };
 
-  const handleDelete = () => {
-    setPayModes(payModes.filter(payMode => payMode.id !== selectedPayMode.id));
-    closeModal();
+  const handleDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}paymode/delete/${selectedPayMode.id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Refresh the list after deletion
+      await fetchPayModes();
+      closeModal();
+    } catch (error) {
+      console.error("Error deleting payment method:", error);
+      setApiError("Failed to delete payment method. Please try again.");
+    }
   };
 
-  const handleAddPayMode = () => {
-    if (!validateForm(newPayMode)) return;
-    
-    const newId = payModes.length > 0 ? Math.max(...payModes.map(p => p.id)) + 1 : 1;
-    setPayModes([...payModes, {...newPayMode, id: newId}]);
-    closeModal();
+  const handleAddPayMode = async (payModeData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}paymode/post`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payModeData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Refresh the list after adding
+      await fetchPayModes();
+      closeModal();
+    } catch (error) {
+      console.error("Error adding payment method:", error);
+      setApiError("Failed to add payment method. Please try again.");
+    }
   };
 
-  const handleUpdatePayMode = () => {
-    if (!validateForm(selectedPayMode)) return;
-    
-    setPayModes(payModes.map(p => 
-      p.id === selectedPayMode.id ? selectedPayMode : p
-    ));
-    closeModal();
+  const handleUpdatePayMode = async (payModeData) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}paymode/update/${payModeData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          payment_method: payModeData.payment_method,
+          description: payModeData.description
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Refresh the list after updating
+      await fetchPayModes();
+      closeModal();
+    } catch (error) {
+      console.error("Error updating payment method:", error);
+      setApiError("Failed to update payment method. Please try again.");
+    }
   };
 
   // Add Pay Mode Modal
@@ -114,6 +195,7 @@ const PayModeMaster = () => {
       status: 1
     });
     const [localErrors, setLocalErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
       if (showAddModal) {
@@ -135,12 +217,15 @@ const PayModeMaster = () => {
       setLocalErrors({});
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
       if (!validateForm(localPayMode)) return;
       
-      const newId = payModes.length > 0 ? Math.max(...payModes.map(p => p.id)) + 1 : 1;
-      setPayModes([...payModes, {...localPayMode, id: newId}]);
-      closeModal();
+      setSubmitting(true);
+      try {
+        await handleAddPayMode(localPayMode);
+      } finally {
+        setSubmitting(false);
+      }
     };
 
     return (
@@ -205,8 +290,12 @@ const PayModeMaster = () => {
             <button onClick={handleReset} className="s-btn s-btn-light">
               Reset
             </button>
-            <button onClick={handleSave} className="s-btn s-btn-grad-danger">
-              Save Payment Method
+            <button 
+              onClick={handleSave} 
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? "Saving..." : "Save Payment Method"}
             </button>
           </div>
         </div>
@@ -222,6 +311,7 @@ const PayModeMaster = () => {
       status: 1
     });
     const [localErrors, setLocalErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
       if (selectedPayMode) {
@@ -229,13 +319,15 @@ const PayModeMaster = () => {
       }
     }, [selectedPayMode]);
 
-    const handleSave = () => {
+    const handleSave = async () => {
       if (!validateForm(localPayMode)) return;
       
-      setPayModes(payModes.map(p => 
-        p.id === localPayMode.id ? localPayMode : p
-      ));
-      closeModal();
+      setSubmitting(true);
+      try {
+        await handleUpdatePayMode(localPayMode);
+      } finally {
+        setSubmitting(false);
+      }
     };
 
     return (
@@ -300,8 +392,12 @@ const PayModeMaster = () => {
             <button onClick={closeModal} className="s-btn s-btn-light">
               Cancel
             </button>
-            <button onClick={handleSave} className="s-btn s-btn-grad-danger">
-              Update Payment Method
+            <button 
+              onClick={handleSave} 
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? "Updating..." : "Update Payment Method"}
             </button>
           </div>
         </div>
@@ -310,31 +406,48 @@ const PayModeMaster = () => {
   };
 
   // Delete Confirmation Modal
-  const DeleteModal = () => (
-    <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
-      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-      <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{maxWidth: '500px'}}>
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Confirm Delete</h2>
-          <button onClick={closeModal} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="thaniya-normal-body">
-          <p>Are you sure you want to delete payment method <strong>{selectedPayMode?.payment_method}</strong>?</p>
-          <p>This action cannot be undone.</p>
-        </div>
-        <div className="thaniya-normal-footer">
-          <button onClick={closeModal} className="s-btn s-btn-light">
-            Cancel
-          </button>
-          <button onClick={handleDelete} className="s-btn s-btn-grad-danger">
-            Delete Payment Method
-          </button>
+  const DeleteModal = () => {
+    const [deleting, setDeleting] = useState(false);
+    
+    const handleDeleteConfirm = async () => {
+      setDeleting(true);
+      try {
+        await handleDelete();
+      } finally {
+        setDeleting(false);
+      }
+    };
+    
+    return (
+      <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
+        <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+        <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{maxWidth: '500px'}}>
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Confirm Delete</h2>
+            <button onClick={closeModal} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="thaniya-normal-body">
+            <p>Are you sure you want to delete payment method <strong>{selectedPayMode?.payment_method}</strong>?</p>
+            <p>This action cannot be undone.</p>
+          </div>
+          <div className="thaniya-normal-footer">
+            <button onClick={closeModal} className="s-btn s-btn-light">
+              Cancel
+            </button>
+            <button 
+              onClick={handleDeleteConfirm} 
+              className="s-btn s-btn-grad-danger"
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete Payment Method"}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Fragment>
@@ -377,65 +490,80 @@ const PayModeMaster = () => {
             </Card.Header>
 
             <div className="s-card-body">
-              <Table responsive className="s-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Payment Method</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPayModes.length > 0 ? (
-                    filteredPayModes.map((payMode, index) => (
-                      <tr key={payMode.id}>
-                        <th>{payMode.id}</th>
-                        <td>
-                          <div className="d-flex align-items-center">
-                            <img
-                              src={index % 2 === 0 ? avatar1 : avatar2}
-                              className="rounded-lg me-2"
-                              width="24"
-                              alt=""
-                            />
-                            <span className="s-w-space-no">{payMode.payment_method}</span>
-                          </div>
-                        </td>
-                        <td>{payMode.description}</td>
-                        <td>
-                          <Badge bg={payMode.status === 1 ? "success" : "danger"}>
-                            {payMode.status === 1 ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                        <td>
-                          <div className="d-flex">
-                            <button 
-                              onClick={() => openEditModal(payMode)}
-                              className="btn btn-custom-blue shadow btn-xs sharp me-1"
-                            >
-                              <i className="fas fa-pencil-alt"></i>
-                            </button>
-                            <button 
-                              onClick={() => openDeleteModal(payMode)}
-                              className="btn btn-danger shadow btn-xs sharp"
-                            >
-                              <i className="fa fa-trash"></i>
-                            </button>
-                          </div>
+              {apiError && (
+                <Alert variant="danger" className="mx-3 mt-3">
+                  {apiError}
+                </Alert>
+              )}
+              
+              {loading ? (
+                <div className="text-center py-5">
+                  <Spinner animation="border" role="status" variant="primary">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                  <p className="mt-2">Loading payment methods...</p>
+                </div>
+              ) : (
+                <Table responsive className="s-bordered">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Payment Method</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPayModes.length > 0 ? (
+                      filteredPayModes.map((payMode, index) => (
+                        <tr key={payMode.id}>
+                          <th>{payMode.id}</th>
+                          <td>
+                            <div className="d-flex align-items-center">
+                              <img
+                                src={index % 2 === 0 ? avatar1 : avatar2}
+                                className="rounded-lg me-2"
+                                width="24"
+                                alt=""
+                              />
+                              <span className="s-w-space-no">{payMode.payment_method}</span>
+                            </div>
+                          </td>
+                          <td>{payMode.description}</td>
+                          <td>
+                            <Badge bg={payMode.status === 1 ? "success" : "danger"}>
+                              {payMode.status === 1 ? "Active" : "Inactive"}
+                            </Badge>
+                          </td>
+                          <td>
+                            <div className="d-flex">
+                              <button 
+                                onClick={() => openEditModal(payMode)}
+                                className="btn btn-custom-blue shadow btn-xs sharp me-1"
+                              >
+                                <i className="fas fa-pencil-alt"></i>
+                              </button>
+                              <button 
+                                onClick={() => openDeleteModal(payMode)}
+                                className="btn btn-danger shadow btn-xs sharp"
+                              >
+                                <i className="fa fa-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="text-center py-4">
+                          {searchTerm ? "No payment methods match your search" : "No payment methods found"}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="text-center py-4">
-                        {searchTerm ? "No payment methods match your search" : "No payment methods found"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
+                    )}
+                  </tbody>
+                </Table>
+              )}
             </div>
           </Card>
         </Col>

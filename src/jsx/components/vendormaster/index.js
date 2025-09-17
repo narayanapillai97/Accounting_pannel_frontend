@@ -22,7 +22,7 @@ const VendorMaster = () => {
   const [vendors, setVendors] = useState([]);
 
   // API base URL
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008/api";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
   // Fetch vendors from API
   const fetchVendors = async () => {
@@ -31,7 +31,7 @@ const VendorMaster = () => {
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API_BASE_URL}/vendormaster/get`, {
         headers: {
-          Authorization: token
+            Authorization: `Bearer ${token}`
         }
       });
       setVendors(response.data);
