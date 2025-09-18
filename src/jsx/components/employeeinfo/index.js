@@ -219,304 +219,511 @@ const EmployeeMaster = () => {
   };
 
   // Add Employee Modal
-  const AddModal = () => {
-    const handleClose = () => {
-      closeModal();
-    };
+// Add Employee Modal
+const AddModal = ({ showAddModal, closeModal }) => {
+  const initialEmployee = {
+    full_name: "",
+    designation: "",
+    department: "",
+    mobile_number: "",
+    email: "",
+    joining_date: "",
+    status: 1,
+  };
 
-    const handleReset = () => {
+  const [newEmployee, setNewEmployee] = useState(initialEmployee);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [apiError, setApiError] = useState("");
+
+  const firstNameRef = useRef(null);
+
+  useEffect(() => {
+    if (showAddModal) {
       setNewEmployee(initialEmployee);
       setErrors({});
-      // Focus on first input after reset
-      setTimeout(() => {
-        if (firstNameRef.current) {
-          firstNameRef.current.focus();
-        }
-      }, 100);
-    };
+      setApiError("");
+      setSuccessMessage("");
+    }
+  }, [showAddModal]);
 
-    if (!showAddModal) return null;
+  const handleReset = () => {
+    setNewEmployee(initialEmployee);
+    setErrors({});
+    setTimeout(() => {
+      if (firstNameRef.current) {
+        firstNameRef.current.focus();
+      }
+    }, 100);
+  };
 
-    return (
-      <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
-        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
-        <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{ maxWidth: "900px", width: "90%" }}>
-          <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">Add Employee</h2>
-            <button onClick={handleClose} className="thaniya-normal-close">
-              <X size={20} />
-            </button>
-          </div>
+  const validateForm = (employeeData) => {
+    const newErrors = {};
+    if (!employeeData.full_name.trim()) newErrors.full_name = "Please enter full name";
+    if (!employeeData.designation.trim()) newErrors.designation = "Please enter designation";
+    if (!employeeData.department.trim()) newErrors.department = "Please enter department";
+    if (!employeeData.mobile_number.trim()) newErrors.mobile_number = "Please enter mobile number";
+    if (!employeeData.email.trim()) newErrors.email = "Please enter email";
+    if (!employeeData.joining_date.trim()) newErrors.joining_date = "Please select joining date";
 
-          <div className="thaniya-normal-body">
-            <Form>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Full Name</Form.Label>
-                    <Form.Control
-                      ref={firstNameRef}
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter full name"
-                      value={newEmployee.full_name}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, full_name: e.target.value })}
-                      isInvalid={!!errors.full_name}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.full_name}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Designation</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter designation"
-                      value={newEmployee.designation}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, designation: e.target.value })}
-                      isInvalid={!!errors.designation}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.designation}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Department</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter department"
-                      value={newEmployee.department}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
-                      isInvalid={!!errors.department}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.department}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Mobile Number</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter mobile number"
-                      value={newEmployee.mobile_number}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, mobile_number: e.target.value })}
-                      isInvalid={!!errors.mobile_number}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.mobile_number}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control
-                      type="email"
-                      className="form-control-lg"
-                      placeholder="Enter email"
-                      value={newEmployee.email}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
-                      isInvalid={!!errors.email}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.email}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Joining Date</Form.Label>
-                    <Form.Control
-                      type="date"
-                      className="form-control-lg"
-                      value={newEmployee.joining_date}
-                      onChange={(e) => setNewEmployee({ ...newEmployee, joining_date: e.target.value })}
-                      isInvalid={!!errors.joining_date}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.joining_date}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Status</Form.Label>
-                    <select
-                      className="form-control form-control-lg"
-                      value={newEmployee.status}
-                      onChange={(e) => setNewEmployee({...newEmployee, status: parseInt(e.target.value)})}
-                    >
-                      <option value={1}>Active</option>
-                      <option value={0}>Inactive</option>
-                    </select>
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Form>
-          </div>
-          <div className="thaniya-normal-footer">
-            <button onClick={handleReset} className="s-btn s-btn-light">
-              Reset
-            </button>
-            <button
-              onClick={handleAddEmployee}
-              className="s-btn s-btn-grad-danger"
-              disabled={submitting}
-            >
-              {submitting ? <Spinner animation="border" size="sm" /> : "Save Employee"}
-            </button>
-          </div>
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddEmployee = async () => {
+    if (!validateForm(newEmployee)) return;
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem("token");
+      const response = await axios.post(`${API_BASE_URL}/employeemaster/post`, newEmployee, {
+        headers: { Authorization: token },
+      });
+
+      // Add employee to list (adjust based on your state management)
+      setEmployees([...employees, { ...newEmployee, employee_id: response.data.employeeId }]);
+      setSuccessMessage("Employee added successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+      closeModal();
+    } catch (error) {
+      console.error("Error adding employee:", error);
+      setApiError(error.response?.data?.error || "Failed to add employee");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    closeModal();
+  };
+
+  if (!showAddModal) return null;
+
+  return (
+    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+      <div
+        className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`}
+        style={{ maxWidth: "900px", width: "90%" }}
+      >
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">Add Employee</h2>
+          <button onClick={handleClose} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="thaniya-normal-body">
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Full Name</Form.Label>
+                  <Form.Control
+                    ref={firstNameRef}
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter full name"
+                    value={newEmployee.full_name}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, full_name: e.target.value })}
+                    isInvalid={!!errors.full_name}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.full_name}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Designation</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter designation"
+                    value={newEmployee.designation}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, designation: e.target.value })}
+                    isInvalid={!!errors.designation}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.designation}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Department</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter department"
+                    value={newEmployee.department}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, department: e.target.value })}
+                    isInvalid={!!errors.department}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.department}
+                  </Form.Control.Feedback>
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Mobile Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter mobile number"
+                    value={newEmployee.mobile_number}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, mobile_number: e.target.value })}
+                    isInvalid={!!errors.mobile_number}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.mobile_number}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    className="form-control-lg"
+                    placeholder="Enter email"
+                    value={newEmployee.email}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, email: e.target.value })}
+                    isInvalid={!!errors.email}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.email}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Joining Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="form-control-lg"
+                    value={newEmployee.joining_date}
+                    onChange={(e) => setNewEmployee({ ...newEmployee, joining_date: e.target.value })}
+                    isInvalid={!!errors.joining_date}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.joining_date}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <select
+                    className="form-control form-control-lg"
+                    value={newEmployee.status}
+                    onChange={(e) =>
+                      setNewEmployee({ ...newEmployee, status: parseInt(e.target.value) })
+                    }
+                  >
+                    <option value={1}>Active</option>
+                    <option value={0}>Inactive</option>
+                  </select>
+                </Form.Group>
+              </Col>
+            </Row>
+          </Form>
+        </div>
+
+        <div className="thaniya-normal-footer">
+          <button onClick={handleReset} className="s-btn s-btn-light">
+            Reset
+          </button>
+          <button
+            onClick={handleAddEmployee}
+            className="s-btn s-btn-grad-danger"
+            disabled={submitting}
+          >
+            {submitting ? <Spinner animation="border" size="sm" /> : "Save Employee"}
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   // Edit Employee Modal
-  const EditModal = () => {
-    const handleClose = () => {
+const EditModal = ({
+  showEditModal,
+  closeModal,
+  isAnimating,
+  selectedEmployee,
+  setEmployees,
+  employees,
+}) => {
+  const initialForm = selectedEmployee || {
+    full_name: "",
+    mobile_number: "",
+    email: "",
+    designation: "",
+    department: "",
+    joining_date: "",
+    address: "",
+    status: 1,
+  };
+
+  const [editEmployee, setEditEmployee] = useState(initialForm);
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    if (selectedEmployee) {
+      setEditEmployee(selectedEmployee);
+      setErrors({});
+    }
+  }, [selectedEmployee]);
+
+  const validateForm = (data) => {
+    const newErrors = {};
+    if (!data.full_name.trim())
+      newErrors.full_name = "Please enter full name";
+    if (!data.mobile_number.trim())
+      newErrors.mobile_number = "Please enter mobile number";
+    if (!data.email.trim()) newErrors.email = "Please enter email";
+    if (!data.joining_date.trim())
+      newErrors.joining_date = "Please select joining date";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleUpdateEmployee = async () => {
+    if (!validateForm(editEmployee)) return;
+
+    try {
+      setSubmitting(true);
+      setApiError("");
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_BASE_URL}/employeemaster/update/${editEmployee.employee_id}`,
+        editEmployee,
+        { headers: { Authorization: token } }
+      );
+
+      const updated = employees.map((emp) =>
+        emp.employee_id === editEmployee.employee_id ? editEmployee : emp
+      );
+      setEmployees(updated);
+
+      setSuccessMessage("Employee updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
       closeModal();
-    };
+    } catch (error) {
+      console.error("Error updating employee:", error);
+      setApiError(error.response?.data?.error || "Failed to update employee");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    if (!showEditModal) return null;
+  if (!showEditModal) return null;
 
-    return (
-      <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
-        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
-        <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{ maxWidth: "900px", width: "90%" }}>
-          <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">Edit Employee</h2>
-            <button onClick={handleClose} className="thaniya-normal-close">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="thaniya-normal-body">
-            <Form>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Full Name</Form.Label>
-                    <Form.Control 
-                      ref={editFirstNameRef}
-                      type="text" 
-                      className="form-control-lg"
-                      placeholder="Enter full name"
-                      value={selectedEmployee?.full_name || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, full_name: e.target.value})}
-                      isInvalid={!!errors.full_name}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.full_name}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Designation</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      className="form-control-lg"
-                      placeholder="Enter designation"
-                      value={selectedEmployee?.designation || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, designation: e.target.value})}
-                      isInvalid={!!errors.designation}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.designation}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Department</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      className="form-control-lg"
-                      placeholder="Enter department"
-                      value={selectedEmployee?.department || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, department: e.target.value})}
-                      isInvalid={!!errors.department}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.department}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                </Col>
-                
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Mobile Number</Form.Label>
-                    <Form.Control 
-                      type="text" 
-                      className="form-control-lg"
-                      placeholder="Enter mobile number"
-                      value={selectedEmployee?.mobile_number || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, mobile_number: e.target.value})}
-                      isInvalid={!!errors.mobile_number}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.mobile_number}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control 
-                      type="email" 
-                      className="form-control-lg"
-                      placeholder="Enter email"
-                      value={selectedEmployee?.email || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, email: e.target.value})}
-                      isInvalid={!!errors.email}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.email}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Joining Date</Form.Label>
-                    <Form.Control 
-                      type="date" 
-                      className="form-control-lg"
-                      value={selectedEmployee?.joining_date || ''}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, joining_date: e.target.value})}
-                      isInvalid={!!errors.joining_date}
-                    />
-                    <Form.Control.Feedback type="invalid">
-                      {errors.joining_date}
-                    </Form.Control.Feedback>
-                  </Form.Group>
-                  
-                  <Form.Group className="mb-3">
-                    <Form.Label>Status</Form.Label>
-                    <select
-                      className="form-control form-control-lg"
-                      value={selectedEmployee?.status || 1}
-                      onChange={(e) => setSelectedEmployee({...selectedEmployee, status: parseInt(e.target.value)})}
-                    >
-                      <option value={1}>Active</option>
-                      <option value={0}>Inactive</option>
-                    </select>
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Form>
-          </div>
-          <div className="thaniya-normal-footer">
-            <button onClick={handleClose} className="s-btn s-btn-light">
-              Cancel
-            </button>
-            <button onClick={handleUpdateEmployee} className="s-btn s-btn-grad-danger" disabled={submitting}>
-              {submitting ? <Spinner animation="border" size="sm" /> : "Update Employee"}
-            </button>
-          </div>
+  return (
+    <div
+      className={`thaniya-normal-overlay ${
+        isAnimating ? "thaniya-overlay-visible" : ""
+      }`}
+    >
+      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+      <div
+        className={`thaniya-normal-modal ${
+          isAnimating ? "thaniya-normal-modal-visible" : ""
+        }`}
+        style={{ maxWidth: "900px", width: "90%" }}
+      >
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">Edit Employee</h2>
+          <button onClick={closeModal} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="thaniya-normal-body">
+          {apiError && <div className="alert alert-danger">{apiError}</div>}
+          {successMessage && (
+            <div className="alert alert-success">{successMessage}</div>
+          )}
+
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Full Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter full name"
+                    value={editEmployee.full_name}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        full_name: e.target.value,
+                      })
+                    }
+                    isInvalid={!!errors.full_name}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.full_name}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Mobile Number</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter mobile number"
+                    value={editEmployee.mobile_number}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        mobile_number: e.target.value,
+                      })
+                    }
+                    isInvalid={!!errors.mobile_number}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.mobile_number}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    className="form-control-lg"
+                    placeholder="Enter email"
+                    value={editEmployee.email}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        email: e.target.value,
+                      })
+                    }
+                    isInvalid={!!errors.email}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.email}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Designation</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter designation"
+                    value={editEmployee.designation}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        designation: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Department</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter department"
+                    value={editEmployee.department}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        department: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Joining Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    className="form-control-lg"
+                    value={editEmployee.joining_date}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        joining_date: e.target.value,
+                      })
+                    }
+                    isInvalid={!!errors.joining_date}
+                  />
+                  <Form.Control.Feedback type="invalid">
+                    {errors.joining_date}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Address</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    className="form-control-lg"
+                    placeholder="Enter address"
+                    value={editEmployee.address}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        address: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Status</Form.Label>
+                  <select
+                    className="form-control form-control-lg"
+                    value={editEmployee.status}
+                    onChange={(e) =>
+                      setEditEmployee({
+                        ...editEmployee,
+                        status: parseInt(e.target.value),
+                      })
+                    }
+                  >
+                    <option value={1}>Active</option>
+                    <option value={0}>Inactive</option>
+                  </select>
+                </Form.Group>
+              </Col>
+            </Row>
+          </Form>
+        </div>
+
+        <div className="thaniya-normal-footer">
+          <button onClick={closeModal} className="s-btn s-btn-light">
+            Cancel
+          </button>
+          <button
+            onClick={handleUpdateEmployee}
+            className="s-btn s-btn-grad-danger"
+            disabled={submitting}
+          >
+            {submitting ? (
+              <Spinner animation="border" size="sm" />
+            ) : (
+              "Update Employee"
+            )}
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
+
 
   // Delete Confirmation Modal
   const DeleteModal = () => {
@@ -674,8 +881,22 @@ const EmployeeMaster = () => {
         </Col>
       </Row>
 
-      <AddModal />
-      <EditModal />
+     <AddModal 
+  showAddModal={showAddModal} 
+  closeModal={closeModal} 
+  isAnimating={isAnimating} 
+  setEmployees={setEmployees} 
+  employees={employees}
+/>
+
+     <EditModal
+  showEditModal={showEditModal}
+  closeModal={closeModal}
+  isAnimating={isAnimating}
+  selectedEmployee={selectedEmployee}
+  setEmployees={setEmployees}
+  employees={employees}
+/>
       <DeleteModal />
     </Fragment>
   );

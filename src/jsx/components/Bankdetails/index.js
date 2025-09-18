@@ -1,11 +1,11 @@
-import React, { Fragment, useState, useMemo } from "react";
-import { Table, Card, Row, Col, Button, Form, Badge, Alert, InputGroup } from "react-bootstrap";
+import React, { Fragment, useState, useMemo, useEffect } from "react";
+import { Table, Card, Row, Col, Button, Form, Badge, Alert, InputGroup, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import PageTitle from "../../layouts/PageTitle";
 import avatar1 from "../../../images/avatar/1.jpg";
 import avatar2 from "../../../images/avatar/2.jpg";
 import { X, Search } from "lucide-react";
-import bankData from "../../../../src/jsx/components/data/data.json"; 
+import axios from "axios";
 
 const BankDetails = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -15,29 +15,40 @@ const BankDetails = () => {
   const [selectedBankDetail, setSelectedBankDetail] = useState(null);
   const [errors, setErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  
-  const [newBankDetail, setNewBankDetail] = useState({
-    employeeId: "",
-    bankName: "",
-    branch: "",
-    ifscCode: "",
-    accountNumber: "",
-    accountType: 1, // 1 for Savings, 2 for Current
-    upiId: ""
-  });
+  const [loading, setLoading] = useState(true);
+  const [bankDetails, setBankDetails] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [bankDetails, setBankDetails] = useState(
-    bankData["bank-details"].map((item, index) => ({
-      id: index + 1,
-      employeeId: item.vemployee_id.toString(),
-      bankName: item.bank_name,
-      branch: item.branch,
-      ifscCode: item.ifsc_code,
-      accountNumber: item.account_number.toString(),
-      accountType: item.account_type === 1 ? 1 : 2,
-      upiId: item.upi_id
-    }))
-  );
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008/";
+
+  // Fetch bank details on component mount
+  useEffect(() => {
+    fetchBankDetails();
+  }, []);
+
+  const fetchBankDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}bankdetails/get`);
+      setBankDetails(response.data);
+      setErrorMessage("");
+    } catch (error) {
+      console.error("Error fetching bank details:", error);
+      setErrorMessage("Failed to load bank details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [newBankDetail, setNewBankDetail] = useState({
+    employee_id: "",
+    bank_name: "",
+    branch: "",
+    ifsc_code: "",
+    account_number: "",
+    account_type: 1, // 1 for Savings, 2 for Current
+    upi_id: ""
+  });
 
   // Filter bank details based on search term
   const filteredBankDetails = useMemo(() => {
@@ -45,22 +56,22 @@ const BankDetails = () => {
     
     const lowerSearchTerm = searchTerm.toLowerCase();
     return bankDetails.filter(detail => 
-      detail.employeeId.toLowerCase().includes(lowerSearchTerm) ||
-      detail.bankName.toLowerCase().includes(lowerSearchTerm) ||
-      detail.branch.toLowerCase().includes(lowerSearchTerm) ||
-      detail.ifscCode.toLowerCase().includes(lowerSearchTerm) ||
-      detail.accountNumber.toLowerCase().includes(lowerSearchTerm) ||
-      (detail.upiId && detail.upiId.toLowerCase().includes(lowerSearchTerm))
+      detail.employee_id?.toString().toLowerCase().includes(lowerSearchTerm) ||
+      detail.bank_name?.toLowerCase().includes(lowerSearchTerm) ||
+      detail.branch?.toLowerCase().includes(lowerSearchTerm) ||
+      detail.ifsc_code?.toLowerCase().includes(lowerSearchTerm) ||
+      detail.account_number?.toString().toLowerCase().includes(lowerSearchTerm) ||
+      (detail.upi_id && detail.upi_id.toLowerCase().includes(lowerSearchTerm))
     );
   }, [bankDetails, searchTerm]);
 
   const validateForm = (bankData) => {
     const newErrors = {};
-    if (!bankData.employeeId.trim()) newErrors.employeeId = "Please enter employee ID";
-    if (!bankData.bankName.trim()) newErrors.bankName = "Please enter bank name";
-    if (!bankData.branch.trim()) newErrors.branch = "Please enter branch";
-    if (!bankData.ifscCode.trim()) newErrors.ifscCode = "Please enter IFSC code";
-    if (!bankData.accountNumber.trim()) newErrors.accountNumber = "Please enter account number";
+    if (!bankData.employee_id?.toString().trim()) newErrors.employee_id = "Please enter employee ID";
+    if (!bankData.bank_name?.trim()) newErrors.bank_name = "Please enter bank name";
+    if (!bankData.branch?.trim()) newErrors.branch = "Please enter branch";
+    if (!bankData.ifsc_code?.trim()) newErrors.ifsc_code = "Please enter IFSC code";
+    if (!bankData.account_number?.toString().trim()) newErrors.account_number = "Please enter account number";
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -68,13 +79,13 @@ const BankDetails = () => {
 
   const openAddModal = () => {
     setNewBankDetail({
-      employeeId: "",
-      bankName: "",
+      employee_id: "",
+      bank_name: "",
       branch: "",
-      ifscCode: "",
-      accountNumber: "",
-      accountType: 1,
-      upiId: ""
+      ifsc_code: "",
+      account_number: "",
+      account_type: 1,
+      upi_id: ""
     });
     setErrors({});
     setShowAddModal(true);
@@ -105,64 +116,86 @@ const BankDetails = () => {
     }, 300);
   };
 
-  const handleDelete = () => {
-    setBankDetails(bankDetails.filter(detail => detail.id !== selectedBankDetail.id));
-    closeModal();
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}bankdetails/delete/${selectedBankDetail.id}`);
+      setBankDetails(bankDetails.filter(detail => detail.id !== selectedBankDetail.id));
+      closeModal();
+    } catch (error) {
+      console.error("Error deleting bank detail:", error);
+      setErrorMessage("Failed to delete bank details. Please try again.");
+    }
   };
 
-  const handleAddBankDetail = () => {
+  const handleAddBankDetail = async () => {
     if (!validateForm(newBankDetail)) return;
     
-    const newId = bankDetails.length > 0 ? Math.max(...bankDetails.map(b => b.id)) + 1 : 1;
-    setBankDetails([...bankDetails, {...newBankDetail, id: newId}]);
-    closeModal();
+    try {
+      const response = await axios.post(`${API_BASE_URL}/bank-details/post`, newBankDetail);
+      // Refetch to get the complete data including employee information
+      await fetchBankDetails();
+      closeModal();
+    } catch (error) {
+      console.error("Error adding bank detail:", error);
+      setErrorMessage("Failed to add bank details. Please try again.");
+    }
   };
 
-  const handleUpdateBankDetail = () => {
+  const handleUpdateBankDetail = async () => {
     if (!validateForm(selectedBankDetail)) return;
     
-    setBankDetails(bankDetails.map(b => 
-      b.id === selectedBankDetail.id ? selectedBankDetail : b
-    ));
-    closeModal();
+    try {
+      await axios.put(`${API_BASE_URL}bankdetails/update/${selectedBankDetail.id}`, selectedBankDetail);
+      setBankDetails(bankDetails.map(b => 
+        b.id === selectedBankDetail.id ? selectedBankDetail : b
+      ));
+      closeModal();
+    } catch (error) {
+      console.error("Error updating bank detail:", error);
+      setErrorMessage("Failed to update bank details. Please try again.");
+    }
   };
 
   // Add Bank Detail Modal
   const AddModal = () => {
     const initialForm = {
-      employeeId: "",
-      bankName: "",
+      employee_id: "",
+      bank_name: "",
       branch: "",
-      ifscCode: "",
-      accountNumber: "",
-      accountType: 1,
-      upiId: "",
+      ifsc_code: "",
+      account_number: "",
+      account_type: 1,
+      upi_id: "",
     };
 
-    const [newBankDetail, setNewBankDetail] = useState(initialForm);
-    const [errors, setErrors] = useState({});
+    const [localBankDetail, setLocalBankDetail] = useState(initialForm);
+    const [localErrors, setLocalErrors] = useState({});
 
     const handleReset = () => {
-      setNewBankDetail(initialForm);
-      setErrors({});
+      setLocalBankDetail(initialForm);
+      setLocalErrors({});
     };
 
-    const handleAddBankDetail = () => {
-      // Validation logic here
+    const handleAdd = async () => {
       const newErrors = {};
-      if (!newBankDetail.employeeId.trim()) newErrors.employeeId = "Please enter employee ID";
-      if (!newBankDetail.bankName.trim()) newErrors.bankName = "Please enter bank name";
-      if (!newBankDetail.branch.trim()) newErrors.branch = "Please enter branch";
-      if (!newBankDetail.ifscCode.trim()) newErrors.ifscCode = "Please enter IFSC code";
-      if (!newBankDetail.accountNumber.trim()) newErrors.accountNumber = "Please enter account number";
+      if (!localBankDetail.employee_id.toString().trim()) newErrors.employee_id = "Please enter employee ID";
+      if (!localBankDetail.bank_name.trim()) newErrors.bank_name = "Please enter bank name";
+      if (!localBankDetail.branch.trim()) newErrors.branch = "Please enter branch";
+      if (!localBankDetail.ifsc_code.trim()) newErrors.ifsc_code = "Please enter IFSC code";
+      if (!localBankDetail.account_number.toString().trim()) newErrors.account_number = "Please enter account number";
       
-      setErrors(newErrors);
+      setLocalErrors(newErrors);
       
       if (Object.keys(newErrors).length === 0) {
-        const newId = bankDetails.length > 0 ? Math.max(...bankDetails.map(b => b.id)) + 1 : 1;
-        setBankDetails([...bankDetails, {...newBankDetail, id: newId}]);
-        handleReset();
-        closeModal();
+        try {
+          await axios.post(`${API_BASE_URL}bankdetails/post`, localBankDetail);
+          await fetchBankDetails();
+          handleReset();
+          closeModal();
+        } catch (error) {
+          console.error("Error adding bank detail:", error);
+          setErrorMessage("Failed to add bank details. Please try again.");
+        }
       }
     };
 
@@ -172,18 +205,9 @@ const BankDetails = () => {
     };
 
     return (
-      <div
-        className={`thaniya-normal-overlay ${
-          isAnimating ? "thaniya-overlay-visible" : ""
-        }`}
-      >
+      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
         <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
-        <div
-          className={`thaniya-normal-modal ${
-            isAnimating ? "thaniya-normal-modal-visible" : ""
-          }`}
-          style={{ maxWidth: "900px", width: "90%" }}
-        >
+        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "900px", width: "90%" }}>
           <div className="thaniya-normal-header">
             <h2 className="thaniya-normal-title">Add Bank Details</h2>
             <button onClick={handleClose} className="thaniya-normal-close">
@@ -201,17 +225,12 @@ const BankDetails = () => {
                       type="number"
                       className="form-control-lg"
                       placeholder="Enter employee ID"
-                      value={newBankDetail.employeeId}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          employeeId: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.employeeId}
+                      value={localBankDetail.employee_id}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, employee_id: e.target.value})}
+                      isInvalid={!!localErrors.employee_id}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {errors.employeeId}
+                      {localErrors.employee_id}
                     </Form.Control.Feedback>
                   </Form.Group>
 
@@ -221,17 +240,12 @@ const BankDetails = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter bank name"
-                      value={newBankDetail.bankName}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          bankName: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.bankName}
+                      value={localBankDetail.bank_name}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, bank_name: e.target.value})}
+                      isInvalid={!!localErrors.bank_name}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {errors.bankName}
+                      {localErrors.bank_name}
                     </Form.Control.Feedback>
                   </Form.Group>
 
@@ -241,17 +255,12 @@ const BankDetails = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter branch"
-                      value={newBankDetail.branch}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          branch: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.branch}
+                      value={localBankDetail.branch}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, branch: e.target.value})}
+                      isInvalid={!!localErrors.branch}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {errors.branch}
+                      {localErrors.branch}
                     </Form.Control.Feedback>
                   </Form.Group>
                 </Col>
@@ -263,17 +272,12 @@ const BankDetails = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter IFSC code"
-                      value={newBankDetail.ifscCode}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          ifscCode: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.ifscCode}
+                      value={localBankDetail.ifsc_code}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, ifsc_code: e.target.value})}
+                      isInvalid={!!localErrors.ifsc_code}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {errors.ifscCode}
+                      {localErrors.ifsc_code}
                     </Form.Control.Feedback>
                   </Form.Group>
 
@@ -283,17 +287,12 @@ const BankDetails = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter account number"
-                      value={newBankDetail.accountNumber}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          accountNumber: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.accountNumber}
+                      value={localBankDetail.account_number}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, account_number: e.target.value})}
+                      isInvalid={!!localErrors.account_number}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {errors.accountNumber}
+                      {localErrors.account_number}
                     </Form.Control.Feedback>
                   </Form.Group>
 
@@ -301,13 +300,8 @@ const BankDetails = () => {
                     <Form.Label>Account Type</Form.Label>
                     <select
                       className="form-control form-control-lg"
-                      value={newBankDetail.accountType}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          accountType: parseInt(e.target.value),
-                        })
-                      }
+                      value={localBankDetail.account_type}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, account_type: parseInt(e.target.value)})}
                     >
                       <option value={1}>Savings</option>
                       <option value={2}>Current</option>
@@ -322,13 +316,8 @@ const BankDetails = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter UPI ID"
-                      value={newBankDetail.upiId}
-                      onChange={(e) =>
-                        setNewBankDetail({
-                          ...newBankDetail,
-                          upiId: e.target.value,
-                        })
-                      }
+                      value={localBankDetail.upi_id}
+                      onChange={(e) => setLocalBankDetail({...localBankDetail, upi_id: e.target.value})}
                     />
                   </Form.Group>
                 </Col>
@@ -340,10 +329,7 @@ const BankDetails = () => {
             <button onClick={handleReset} className="s-btn s-btn-light">
               Reset
             </button>
-            <button
-              onClick={handleAddBankDetail}
-              className="s-btn s-btn-grad-danger"
-            >
+            <button onClick={handleAdd} className="s-btn s-btn-grad-danger">
               Save Bank Details
             </button>
           </div>
@@ -356,7 +342,7 @@ const BankDetails = () => {
   const EditModal = () => (
     <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
       <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-      <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`}   style={{ maxWidth: "900px", width: "90%" }}>
+      <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{ maxWidth: "900px", width: "90%" }}>
         <div className="thaniya-normal-header">
           <h2 className="thaniya-normal-title">Edit Bank Details</h2>
           <button onClick={closeModal} className="thaniya-normal-close">
@@ -373,12 +359,12 @@ const BankDetails = () => {
                     type="text" 
                     className="form-control-lg"
                     placeholder="Enter employee ID"
-                    value={selectedBankDetail?.employeeId || ''}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, employeeId: e.target.value})}
-                    isInvalid={!!errors.employeeId}
+                    value={selectedBankDetail?.employee_id || ''}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, employee_id: e.target.value})}
+                    isInvalid={!!errors.employee_id}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {errors.employeeId}
+                    {errors.employee_id}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
@@ -388,12 +374,12 @@ const BankDetails = () => {
                     type="text" 
                     className="form-control-lg"
                     placeholder="Enter bank name"
-                    value={selectedBankDetail?.bankName || ''}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, bankName: e.target.value})}
-                    isInvalid={!!errors.bankName}
+                    value={selectedBankDetail?.bank_name || ''}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, bank_name: e.target.value})}
+                    isInvalid={!!errors.bank_name}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {errors.bankName}
+                    {errors.bank_name}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
@@ -420,12 +406,12 @@ const BankDetails = () => {
                     type="text" 
                     className="form-control-lg"
                     placeholder="Enter IFSC code"
-                    value={selectedBankDetail?.ifscCode || ''}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, ifscCode: e.target.value})}
-                    isInvalid={!!errors.ifscCode}
+                    value={selectedBankDetail?.ifsc_code || ''}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, ifsc_code: e.target.value})}
+                    isInvalid={!!errors.ifsc_code}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {errors.ifscCode}
+                    {errors.ifsc_code}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
@@ -435,12 +421,12 @@ const BankDetails = () => {
                     type="text" 
                     className="form-control-lg"
                     placeholder="Enter account number"
-                    value={selectedBankDetail?.accountNumber || ''}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, accountNumber: e.target.value})}
-                    isInvalid={!!errors.accountNumber}
+                    value={selectedBankDetail?.account_number || ''}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, account_number: e.target.value})}
+                    isInvalid={!!errors.account_number}
                   />
                   <Form.Control.Feedback type="invalid">
-                    {errors.accountNumber}
+                    {errors.account_number}
                   </Form.Control.Feedback>
                 </Form.Group>
                 
@@ -448,8 +434,8 @@ const BankDetails = () => {
                   <Form.Label>Account Type</Form.Label>
                   <select
                     className="form-control form-control-lg"
-                    value={selectedBankDetail?.accountType || 1}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, accountType: parseInt(e.target.value)})}
+                    value={selectedBankDetail?.account_type || 1}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, account_type: parseInt(e.target.value)})}
                   >
                     <option value={1}>Savings</option>
                     <option value={2}>Current</option>
@@ -464,8 +450,8 @@ const BankDetails = () => {
                     type="text" 
                     className="form-control-lg"
                     placeholder="Enter UPI ID"
-                    value={selectedBankDetail?.upiId || ''}
-                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, upiId: e.target.value})}
+                    value={selectedBankDetail?.upi_id || ''}
+                    onChange={(e) => setSelectedBankDetail({...selectedBankDetail, upi_id: e.target.value})}
                   />
                 </Form.Group>
               </Col>
@@ -496,7 +482,7 @@ const BankDetails = () => {
           </button>
         </div>
         <div className="thaniya-normal-body">
-          <p>Are you sure you want to delete bank details for <strong>{selectedBankDetail?.employeeId}</strong>?</p>
+          <p>Are you sure you want to delete bank details for <strong>{selectedBankDetail?.employee_id}</strong>?</p>
           <p>This action cannot be undone.</p>
         </div>
         <div className="thaniya-normal-footer">
@@ -522,19 +508,18 @@ const BankDetails = () => {
               <div>
                 <Card.Title>Bank Details</Card.Title>
               </div>
-                    <InputGroup className="me-3" style={{ width: '300px' }}>
-                  <InputGroup.Text>
-                    <Search size={16} />
-                  </InputGroup.Text>
-                  <Form.Control
-                    type="text"
-                    placeholder="Search bank details..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
+              <InputGroup className="me-3" style={{ width: '300px' }}>
+                <InputGroup.Text>
+                  <Search size={16} />
+                </InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Search bank details..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </InputGroup>
               <div className="d-flex align-items-center">
-          
                 <Button className="s-btn s-btn-grad-danger" onClick={openAddModal}>
                   + Add Bank Details
                 </Button>
@@ -542,7 +527,18 @@ const BankDetails = () => {
             </Card.Header>
 
             <div className="s-card-body">
-              {filteredBankDetails.length === 0 ? (
+              {errorMessage && (
+                <Alert variant="danger" className="m-3">
+                  {errorMessage}
+                </Alert>
+              )}
+              
+              {loading ? (
+                <div className="text-center p-5">
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-2">Loading bank details...</p>
+                </div>
+              ) : filteredBankDetails.length === 0 ? (
                 <Alert variant="info" className="m-3">
                   {searchTerm ? 'No bank details match your search.' : 'No bank details found.'}
                 </Alert>
@@ -552,6 +548,7 @@ const BankDetails = () => {
                     <tr>
                       <th>#</th>
                       <th>Employee ID</th>
+                      <th>Employee Name</th>
                       <th>Bank Name</th>
                       <th>Branch</th>
                       <th>IFSC Code</th>
@@ -573,19 +570,20 @@ const BankDetails = () => {
                               width="24"
                               alt=""
                             />
-                            <span className="s-w-space-no">{detail.employeeId}</span>
+                            <span className="s-w-space-no">{detail.employee_id}</span>
                           </div>
                         </td>
-                        <td>{detail.bankName}</td>
-                        <td>{detail.branch}</td>
-                        <td>{detail.ifscCode}</td>
-                        <td>{detail.accountNumber}</td>
+                        <td>{detail.full_name || 'N/A'}</td>
+                        <td>{detail.bank_name}</td>
+                        <td>{detail.branch || '-'}</td>
+                        <td>{detail.ifsc_code || '-'}</td>
+                        <td>{detail.account_number}</td>
                         <td>
-                          <Badge variant={detail.accountType === 1 ? "primary light" : "info light"}>
-                            {detail.accountType === 1 ? "Savings" : "Current"}
+                          <Badge variant={detail.account_type === 1 ? "primary light" : "info light"}>
+                            {detail.account_type === 1 ? "Savings" : "Current"}
                           </Badge>
                         </td>
-                        <td>{detail.upiId || "-"}</td>
+                        <td>{detail.upi_id || "-"}</td>
                         <td>
                           <div className="d-flex">
                             <button 
