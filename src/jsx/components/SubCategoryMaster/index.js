@@ -1,11 +1,10 @@
-import React, { Fragment, useState, useMemo, useEffect } from "react";
-import { Table, Card, Row, Col, Button, Form, Badge, InputGroup, Spinner } from "react-bootstrap";
+import React, { Fragment, useState, useEffect, useMemo } from "react";
+import { Table, Card, Row, Col, Button, Form, Badge, Alert, InputGroup, Spinner } from "react-bootstrap";
 import PageTitle from "../../layouts/PageTitle";
 import { X, Search } from "lucide-react";
 import axios from "axios";
 
 const SubCategoryMaster = () => {
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -13,22 +12,16 @@ const SubCategoryMaster = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const [errors, setErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [newSubCategory, setNewSubCategory] = useState({
-    main_category_id: "",
-    sub_category_name: "",
-    description: "",
-    status: 1
-  });
+  const [mainCategories, setMainCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // API base URL
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
+  // Fetch data from API
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -39,14 +32,20 @@ const SubCategoryMaster = () => {
       
       setSubCategories(subCategoriesRes.data);
       setMainCategories(mainCategoriesRes.data);
+      setApiError("");
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Failed to fetch data. Please try again.");
+      setApiError("Failed to fetch data. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Get main category name by ID
   const getMainCategoryName = (id) => {
     const category = mainCategories.find(cat => cat.id === id);
     return category ? category.category_name : "Unknown";
@@ -74,12 +73,6 @@ const SubCategoryMaster = () => {
   };
 
   const openAddModal = () => {
-    setNewSubCategory({
-      main_category_id: "",
-      sub_category_name: "",
-      description: "",
-      status: 1
-    });
     setErrors({});
     setShowAddModal(true);
     setTimeout(() => setIsAnimating(true), 10);
@@ -111,106 +104,93 @@ const SubCategoryMaster = () => {
 
   const handleDelete = async () => {
     try {
-      setSaving(true);
       await axios.delete(`${API_BASE_URL}/api/subcategory/delete/${selectedSubCategory.id}`);
-      setSubCategories(subCategories.filter(item => item.id !== selectedSubCategory.id));
+      
+      setSubCategories(subCategories.filter(subCategory => subCategory.id !== selectedSubCategory.id));
+      setSuccessMessage("Sub category deleted successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
       closeModal();
-      alert("Sub category deleted successfully!");
     } catch (error) {
       console.error("Error deleting sub category:", error);
-      alert("Failed to delete sub category. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAddSubCategory = async () => {
-    if (!validateForm(newSubCategory)) return;
-    
-    try {
-      setSaving(true);
-      const response = await axios.post(`${API_BASE_URL}/api/subcategory/post`, newSubCategory);
-      setSubCategories([...subCategories, response.data]);
-      closeModal();
-      alert("Sub category added successfully!");
-    } catch (error) {
-      console.error("Error adding sub category:", error);
-      alert("Failed to add sub category. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleUpdateSubCategory = async () => {
-    if (!validateForm(selectedSubCategory)) return;
-    
-    try {
-      setSaving(true);
-      await axios.put(`${API_BASE_URL}/api/subcategory/update/${selectedSubCategory.id}`, selectedSubCategory);
-      setSubCategories(subCategories.map(item => 
-        item.id === selectedSubCategory.id ? selectedSubCategory : item
-      ));
-      closeModal();
-      alert("Sub category updated successfully!");
-    } catch (error) {
-      console.error("Error updating sub category:", error);
-      alert("Failed to update sub category. Please try again.");
-    } finally {
-      setSaving(false);
+      setApiError(error.response?.data?.error || "Failed to delete sub category");
     }
   };
 
   // Add Sub Category Modal
-  const AddModal = () => {
-    const [localSubCategory, setLocalSubCategory] = useState({
+  const AddModal = ({ showAddModal, closeModal }) => {
+    const initialForm = {
       main_category_id: "",
       sub_category_name: "",
       description: "",
       status: 1
-    });
-    const [localErrors, setLocalErrors] = useState({});
+    };
+
+    const [newSubCategory, setNewSubCategory] = useState(initialForm);
+    const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+      if (showAddModal) {
+        setNewSubCategory(initialForm);
+        setErrors({});
+      }
+    }, [showAddModal]);
 
     const handleReset = () => {
-      setLocalSubCategory({
-        main_category_id: "",
-        sub_category_name: "",
-        description: "",
-        status: 1
-      });
-      setLocalErrors({});
+      setNewSubCategory(initialForm);
+      setErrors({});
     };
 
-    const handleSave = async () => {
-      if (!localSubCategory.main_category_id) {
-        setLocalErrors({ main_category_id: "Please select main category" });
-        return;
-      }
-      if (!localSubCategory.sub_category_name.trim()) {
-        setLocalErrors({ sub_category_name: "Please enter sub category name" });
-        return;
-      }
+    const validateForm = (subCategoryData) => {
+      const newErrors = {};
+      if (!subCategoryData.main_category_id) newErrors.main_category_id = "Please select main category";
+      if (!subCategoryData.sub_category_name.trim()) newErrors.sub_category_name = "Please enter sub category name";
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+
+    const handleAddSubCategory = async () => {
+      if (!validateForm(newSubCategory)) return;
       
       try {
-        setSaving(true);
-        const response = await axios.post(`${API_BASE_URL}/api/subcategory/post`, localSubCategory);
+        setSubmitting(true);
+        const response = await axios.post(`${API_BASE_URL}/api/subcategory/post`, newSubCategory);
+        
         setSubCategories([...subCategories, response.data]);
+        setSuccessMessage("Sub category added successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
         closeModal();
-        alert("Sub category added successfully!");
       } catch (error) {
         console.error("Error adding sub category:", error);
-        alert("Failed to add sub category. Please try again.");
+        setApiError(error.response?.data?.error || "Failed to add sub category");
       } finally {
-        setSaving(false);
+        setSubmitting(false);
       }
     };
 
+    const handleClose = () => {
+      closeModal();
+    };
+
+    if (!showAddModal) return null;
+
     return (
-      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
-        <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
+      <div
+        className={`thaniya-normal-overlay ${
+          isAnimating ? "thaniya-overlay-visible" : ""
+        }`}
+      >
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+        <div
+          className={`thaniya-normal-modal ${
+            isAnimating ? "thaniya-normal-modal-visible" : ""
+          }`}
+          style={{ maxWidth: "700px", width: "90%" }}
+        >
           <div className="thaniya-normal-header">
             <h2 className="thaniya-normal-title">Add Sub Category</h2>
-            <button onClick={closeModal} className="thaniya-normal-close">
+            <button onClick={handleClose} className="thaniya-normal-close">
               <X size={20} />
             </button>
           </div>
@@ -223,8 +203,11 @@ const SubCategoryMaster = () => {
                     <Form.Label>Main Category</Form.Label>
                     <select
                       className="form-control form-control-lg"
-                      value={localSubCategory.main_category_id}
-                      onChange={(e) => setLocalSubCategory({...localSubCategory, main_category_id: parseInt(e.target.value)})}
+                      value={newSubCategory.main_category_id}
+                      onChange={(e) =>
+                        setNewSubCategory({ ...newSubCategory, main_category_id: parseInt(e.target.value) })
+                      }
+                      isInvalid={!!errors.main_category_id}
                     >
                       <option value="" disabled>Choose...</option>
                       {mainCategories.map((category) => (
@@ -233,11 +216,9 @@ const SubCategoryMaster = () => {
                         </option>
                       ))}
                     </select>
-                    {localErrors.main_category_id && (
-                      <div className="text-danger small mt-1">
-                        {localErrors.main_category_id}
-                      </div>
-                    )}
+                    <Form.Control.Feedback type="invalid">
+                      {errors.main_category_id}
+                    </Form.Control.Feedback>
                   </Form.Group>
 
                   <Form.Group className="mb-3">
@@ -246,12 +227,14 @@ const SubCategoryMaster = () => {
                       type="text"
                       className="form-control-lg"
                       placeholder="Enter sub category name"
-                      value={localSubCategory.sub_category_name}
-                      onChange={(e) => setLocalSubCategory({...localSubCategory, sub_category_name: e.target.value})}
-                      isInvalid={!!localErrors.sub_category_name}
+                      value={newSubCategory.sub_category_name}
+                      onChange={(e) =>
+                        setNewSubCategory({ ...newSubCategory, sub_category_name: e.target.value })
+                      }
+                      isInvalid={!!errors.sub_category_name}
                     />
                     <Form.Control.Feedback type="invalid">
-                      {localErrors.sub_category_name}
+                      {errors.sub_category_name}
                     </Form.Control.Feedback>
                   </Form.Group>
 
@@ -262,8 +245,10 @@ const SubCategoryMaster = () => {
                       rows={3}
                       className="form-control-lg"
                       placeholder="Enter description"
-                      value={localSubCategory.description}
-                      onChange={(e) => setLocalSubCategory({...localSubCategory, description: e.target.value})}
+                      value={newSubCategory.description}
+                      onChange={(e) =>
+                        setNewSubCategory({ ...newSubCategory, description: e.target.value })
+                      }
                     />
                   </Form.Group>
 
@@ -271,8 +256,13 @@ const SubCategoryMaster = () => {
                     <Form.Label>Status</Form.Label>
                     <select
                       className="form-control form-control-lg"
-                      value={localSubCategory.status}
-                      onChange={(e) => setLocalSubCategory({...localSubCategory, status: parseInt(e.target.value)})}
+                      value={newSubCategory.status}
+                      onChange={(e) =>
+                        setNewSubCategory({
+                          ...newSubCategory,
+                          status: parseInt(e.target.value),
+                        })
+                      }
                     >
                       <option value={1}>Active</option>
                       <option value={0}>Inactive</option>
@@ -284,11 +274,15 @@ const SubCategoryMaster = () => {
           </div>
 
           <div className="thaniya-normal-footer">
-            <button onClick={handleReset} className="s-btn s-btn-light" disabled={saving}>
+            <button onClick={handleReset} className="s-btn s-btn-light">
               Reset
             </button>
-            <button onClick={handleSave} className="s-btn s-btn-grad-danger" disabled={saving}>
-              {saving ? <Spinner animation="border" size="sm" /> : "Save Sub Category"}
+            <button
+              onClick={handleAddSubCategory}
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? <Spinner animation="border" size="sm" /> : "Save Sub Category"}
             </button>
           </div>
         </div>
@@ -297,131 +291,222 @@ const SubCategoryMaster = () => {
   };
 
   // Edit Sub Category Modal
-  const EditModal = () => (
-    <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
-      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-      <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{ maxWidth: "900px", width: "90%" }}>
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Edit Sub Category</h2>
-          <button onClick={closeModal} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="thaniya-normal-body">
-          <Form>
-            <Row>
-              <Col md={12}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Main Category</Form.Label>
-                  <div className="form-group d-flex align-items-center">
+  const EditModal = ({ selectedSubCategory, showEditModal, closeModal }) => {
+    const initialForm = selectedSubCategory || {
+      main_category_id: "",
+      sub_category_name: "",
+      description: "",
+      status: 1,
+    };
+
+    const [editSubCategory, setEditSubCategory] = useState(initialForm);
+    const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+      if (selectedSubCategory) {
+        setEditSubCategory(selectedSubCategory);
+      }
+    }, [selectedSubCategory]);
+
+    const handleReset = () => {
+      setEditSubCategory(initialForm);
+      setErrors({});
+    };
+
+    const validateForm = (subCategoryData) => {
+      const newErrors = {};
+      if (!subCategoryData.main_category_id) newErrors.main_category_id = "Please select main category";
+      if (!subCategoryData.sub_category_name.trim()) newErrors.sub_category_name = "Please enter sub category name";
+      
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
+
+    const handleUpdateSubCategory = async () => {
+      if (!validateForm(editSubCategory)) return;
+      
+      try {
+        setSubmitting(true);
+        await axios.put(`${API_BASE_URL}/api/subcategory/update/${editSubCategory.id}`, editSubCategory);
+        
+        setSubCategories(subCategories.map(c => 
+          c.id === editSubCategory.id ? editSubCategory : c
+        ));
+        setSuccessMessage("Sub category updated successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        closeModal();
+      } catch (error) {
+        console.error("Error updating sub category:", error);
+        setApiError(error.response?.data?.error || "Failed to update sub category");
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    const handleClose = () => {
+      closeModal();
+    };
+
+    if (!showEditModal) return null;
+
+    return (
+      <div
+        className={`thaniya-normal-overlay ${
+          isAnimating ? "thaniya-overlay-visible" : ""
+        }`}
+      >
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+        <div
+          className={`thaniya-normal-modal ${
+            isAnimating ? "thaniya-normal-modal-visible" : ""
+          }`}
+          style={{ maxWidth: "700px", width: "90%" }}
+        >
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Edit Sub Category</h2>
+            <button onClick={handleClose} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="thaniya-normal-body">
+            <Form>
+              <Row>
+                <Col md={12}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Main Category</Form.Label>
                     <select
                       className="form-control form-control-lg"
-                      value={selectedSubCategory?.main_category_id || ''}
-                      onChange={(e) => setSelectedSubCategory({...selectedSubCategory, main_category_id: parseInt(e.target.value)})}
-                      style={{width: '100%'}}
+                      value={editSubCategory.main_category_id}
+                      onChange={(e) =>
+                        setEditSubCategory({ ...editSubCategory, main_category_id: parseInt(e.target.value) })
+                      }
+                      isInvalid={!!errors.main_category_id}
                     >
                       <option value="" disabled>Choose...</option>
-                      {mainCategories.map(category => (
-                        <option key={category.id} value={category.id}>{category.category_name}</option>
+                      {mainCategories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.category_name}
+                        </option>
                       ))}
                     </select>
-                  </div>
-                  {errors.main_category_id && (
-                    <div className="text-danger small mt-1">{errors.main_category_id}</div>
-                  )}
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Sub Category Name</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    className="form-control-lg"
-                    placeholder="Enter sub category name"
-                    value={selectedSubCategory?.sub_category_name || ''}
-                    onChange={(e) => setSelectedSubCategory({...selectedSubCategory, sub_category_name: e.target.value})}
-                    isInvalid={!!errors.sub_category_name}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.sub_category_name}
-                  </Form.Control.Feedback>
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Description</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={3} 
-                    className="form-control-lg"
-                    placeholder="Enter description"
-                    value={selectedSubCategory?.description || ''}
-                    onChange={(e) => setSelectedSubCategory({...selectedSubCategory, description: e.target.value})}
-                  />
-                </Form.Group>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
-                  <div className="form-group d-flex align-items-center">
+                    <Form.Control.Feedback type="invalid">
+                      {errors.main_category_id}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Sub Category Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter sub category name"
+                      value={editSubCategory.sub_category_name}
+                      onChange={(e) =>
+                        setEditSubCategory({ ...editSubCategory, sub_category_name: e.target.value })
+                      }
+                      isInvalid={!!errors.sub_category_name}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.sub_category_name}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      className="form-control-lg"
+                      placeholder="Enter description"
+                      value={editSubCategory.description}
+                      onChange={(e) =>
+                        setEditSubCategory({ ...editSubCategory, description: e.target.value })
+                      }
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Status</Form.Label>
                     <select
                       className="form-control form-control-lg"
-                      value={selectedSubCategory?.status || 1}
-                      onChange={(e) => setSelectedSubCategory({...selectedSubCategory, status: parseInt(e.target.value)})}
-                      style={{width: '100%'}}
+                      value={editSubCategory.status}
+                      onChange={(e) =>
+                        setEditSubCategory({
+                          ...editSubCategory,
+                          status: parseInt(e.target.value),
+                        })
+                      }
                     >
                       <option value={1}>Active</option>
                       <option value={0}>Inactive</option>
                     </select>
-                  </div>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
-        </div>
-        <div className="thaniya-normal-footer">
-          <button onClick={closeModal} className="s-btn s-btn-light" disabled={saving}>
-            Cancel
-          </button>
-          <button onClick={handleUpdateSubCategory} className="s-btn s-btn-grad-danger" disabled={saving}>
-            {saving ? <Spinner animation="border" size="sm" /> : "Update Sub Category"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          </div>
 
-  // Delete Confirmation Modal
-  const DeleteModal = () => (
-    <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
-      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-      <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{maxWidth: '500px'}}>
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Confirm Delete</h2>
-          <button onClick={closeModal} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
+          <div className="thaniya-normal-footer">
+            <button onClick={handleClose} className="s-btn s-btn-light">
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateSubCategory}
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? <Spinner animation="border" size="sm" /> : "Update Sub Category"}
+            </button>
+          </div>
         </div>
-        <div className="thaniya-normal-body">
-          <p>Are you sure you want to delete sub category <strong>{selectedSubCategory?.sub_category_name}</strong>?</p>
-          <p>This action cannot be undone.</p>
-        </div>
-        <div className="thaniya-normal-footer">
-          <button onClick={closeModal} className="s-btn s-btn-light" disabled={saving}>
-            Cancel
-          </button>
-          <button onClick={handleDelete} className="s-btn s-btn-grad-danger" disabled={saving}>
-            {saving ? <Spinner animation="border" size="sm" /> : "Delete Sub Category"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ height: "50vh" }}>
-        <Spinner animation="border" variant="primary" />
       </div>
     );
-  }
+  };
+
+  // Delete Confirmation Modal
+  const DeleteModal = ({ selectedSubCategory, showDeleteModal, closeModal, handleDelete }) => {
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDeleteClick = async () => {
+      setDeleting(true);
+      await handleDelete();
+      setDeleting(false);
+    };
+
+    const handleClose = () => {
+      closeModal();
+    };
+
+    if (!showDeleteModal) return null;
+
+    return (
+      <div className={`thaniya-normal-overlay ${isAnimating ? 'thaniya-overlay-visible' : ''}`}>
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+        <div className={`thaniya-normal-modal ${isAnimating ? 'thaniya-normal-modal-visible' : ''}`} style={{maxWidth: '500px'}}>
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Confirm Delete</h2>
+            <button onClick={handleClose} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="thaniya-normal-body">
+            <p>Are you sure you want to delete sub category <strong>{selectedSubCategory?.sub_category_name}</strong>?</p>
+            <p>This action cannot be undone.</p>
+          </div>
+          <div className="thaniya-normal-footer">
+            <button onClick={handleClose} className="s-btn s-btn-light">
+              Cancel
+            </button>
+            <button onClick={handleDeleteClick} className="s-btn s-btn-grad-danger" disabled={deleting}>
+              {deleting ? <Spinner animation="border" size="sm" /> : "Delete Sub Category"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Fragment>
@@ -434,27 +519,17 @@ const SubCategoryMaster = () => {
               <div>
                 <Card.Title>Sub Category Master</Card.Title>
               </div>
-              <div className="me-3" style={{ width: "300px" }}>
-                <InputGroup>
-                  <InputGroup.Text>
-                    <Search size={18} />
-                  </InputGroup.Text>
-                  <Form.Control
-                    type="text"
-                    placeholder="Search sub categories..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  {searchTerm && (
-                    <Button
-                      variant="outline-secondary"
-                      onClick={() => setSearchTerm("")}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </InputGroup>
-              </div>
+              <InputGroup className="me-3" style={{ width: '300px' }}>
+                <InputGroup.Text>
+                  <Search size={18} />
+                </InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Search sub categories..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </InputGroup>
               <div className="d-flex align-items-center">
                 <Button className="s-btn s-btn-grad-danger" onClick={openAddModal}>
                   + Add Sub Category
@@ -463,27 +538,44 @@ const SubCategoryMaster = () => {
             </Card.Header>
 
             <div className="s-card-body">
-              <Table responsive className="s-bordered">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Main Category</th>
-                    <th>Sub Category Name</th>
-                    <th>Description</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubCategories.length > 0 ? (
-                    filteredSubCategories.map((subCategory) => (
+              {apiError && (
+                <Alert variant="danger" className="mx-3 mt-3">
+                  {apiError}
+                </Alert>
+              )}
+              
+              {successMessage && (
+                <Alert variant="success" className="mx-3 mt-3">
+                  {successMessage}
+                </Alert>
+              )}
+              
+              {loading ? (
+                <div className="text-center py-5">
+                  <Spinner animation="border" role="status" variant="primary" />
+                  <p className="mt-2">Loading sub categories...</p>
+                </div>
+              ) : (
+                <Table responsive className="s-bordered">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Main Category</th>
+                      <th>Sub Category Name</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSubCategories.map((subCategory, index) => (
                       <tr key={subCategory.id}>
-                        <th>{subCategory.id}</th>
+                        <th>{index + 1}</th>
                         <td>{getMainCategoryName(subCategory.main_category_id)}</td>
                         <td>{subCategory.sub_category_name}</td>
-                        <td>{subCategory.description}</td>
+                        <td>{subCategory.description || "-"}</td>
                         <td>
-                          <Badge bg={subCategory.status === 1 ? "success" : "danger"}>
+                          <Badge variant={subCategory.status === 1 ? "success light" : "danger light"}>
                             {subCategory.status === 1 ? "Active" : "Inactive"}
                           </Badge>
                         </td>
@@ -495,6 +587,7 @@ const SubCategoryMaster = () => {
                             >
                               <i className="fas fa-pencil-alt"></i>
                             </button>
+
                             <button 
                               onClick={() => openDeleteModal(subCategory)}
                               className="btn btn-danger shadow btn-xs sharp"
@@ -504,24 +597,34 @@ const SubCategoryMaster = () => {
                           </div>
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="6" className="text-center py-4">
-                        {searchTerm ? "No sub categories match your search" : "No sub categories found"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
+                    ))}
+                    {filteredSubCategories.length === 0 && (
+                      <tr>
+                        <td colSpan="6" className="text-center py-4">
+                          {searchTerm ? `No sub categories found matching "${searchTerm}"` : 'No sub categories found'}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </Table>
+              )}
             </div>
           </Card>
         </Col>
       </Row>
 
-      {showAddModal && <AddModal />}
-      {showEditModal && <EditModal />}
-      {showDeleteModal && <DeleteModal />}
+      <AddModal showAddModal={showAddModal} closeModal={closeModal} />
+      <EditModal 
+        selectedSubCategory={selectedSubCategory} 
+        showEditModal={showEditModal} 
+        closeModal={closeModal} 
+      />
+      <DeleteModal 
+        selectedSubCategory={selectedSubCategory} 
+        showDeleteModal={showDeleteModal} 
+        closeModal={closeModal} 
+        handleDelete={handleDelete}
+      />
     </Fragment>
   );
 };
