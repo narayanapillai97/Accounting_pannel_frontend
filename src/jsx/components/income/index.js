@@ -10,10 +10,9 @@ import {
   Alert,
   Nav,
   Tab,
-  Container,
   InputGroup,
+  Spinner
 } from "react-bootstrap";
-import { Link } from "react-router-dom";
 import PageTitle from "../../layouts/PageTitle";
 import {
   X,
@@ -26,10 +25,13 @@ import {
   Eye,
   Download,
   Search,
+  RefreshCw
 } from "lucide-react";
-import Data from "../../../../src/jsx/components/data/data.json";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import axios from "axios";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const IncomeMaster = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -49,6 +51,10 @@ const IncomeMaster = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTermFiles, setSearchTermFiles] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [incomes, setIncomes] = useState([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [apiError, setApiError] = useState("");
 
   const [newIncome, setNewIncome] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -64,43 +70,195 @@ const IncomeMaster = () => {
     files: [],
   });
 
-  const [incomes, setIncomes] = useState(
-    Data["incomes"].map((item, index) => ({
-      id: index + 1,
-      date: item.date,
-      category_id: item.category_id,
-      subcategory_id: item.subcategory_id,
-      variant_id: item.variant_id,
-      payer_name: item.payer_name,
-      description: item.description,
-      amount: item.amount,
-      payment_mode_id: item.payment_mode_id,
-      bill_id: item.bill_id,
-      status: item.status === 1 ? 1 : 0,
-      files: [],
-    }))
-  );
-
-  // Load dropdown data
-  useEffect(() => {
-    // In a real app, you would fetch these from an API
-    setCategories(Data["categories"] || []);
-    setSubcategories(Data["subcategories"] || []);
-    setVariants(Data["variants"] || []);
-    setPaymentModes(Data["payment_modes"] || []);
-    
-    // Load files from localStorage
-    const savedFiles = localStorage.getItem('incomeFiles');
-    if (savedFiles) {
-      const filesData = JSON.parse(savedFiles);
-      setIncomes(prevIncomes => 
-        prevIncomes.map(income => ({
-          ...income,
-          files: filesData[income.id] || []
-        }))
-      );
+  // API Calls for Dropdown Data
+  const fetchCategories = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/api/maincategory/getall`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setCategories(response.data);
+      setApiError("");
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      setApiError(error.response?.data?.error || "Failed to fetch categories");
     }
-  }, []);
+  };
+
+  const fetchSubcategories = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/subcategory/getall`);
+      setSubcategories(response.data);
+      setApiError("");
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      setApiError("Failed to fetch subcategories");
+    }
+  };
+
+  const fetchVariants = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/api/variant/getall`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setVariants(response.data);
+      setApiError("");
+    } catch (error) {
+      console.error("Error fetching variants:", error);
+      setApiError(error.response?.data?.error || "Failed to fetch variants");
+    }
+  };
+
+  const fetchPaymentModes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/paymode/get`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPaymentModes(data);
+      setApiError("");
+    } catch (error) {
+      console.error("Error fetching payment methods:", error);
+      setApiError("Failed to load payment methods");
+    }
+  };
+
+  // API Calls for Income Data
+  const fetchIncomes = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/income/get`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch incomes');
+      }
+      
+      const data = await response.json();
+      setIncomes(data.map((item) => ({
+        ...item,
+        files: item.files || []
+      })));
+    } catch (error) {
+      console.error('Error fetching incomes:', error);
+      setApiError('Failed to load income records');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addIncome = async (incomeData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/income/post`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(incomeData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to add income');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding income:', error);
+      throw error;
+    }
+  };
+
+  const updateIncome = async (id, incomeData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/income/update/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(incomeData)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update income');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating income:', error);
+      throw error;
+    }
+  };
+
+  const deleteIncome = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/income/delete/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete income');
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting income:', error);
+      throw error;
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      await Promise.all([
+        fetchIncomes(),
+        fetchCategories(),
+        fetchSubcategories(),
+        fetchVariants(),
+        fetchPaymentModes()
+      ]);
+      
+      // Load files from localStorage
+      const savedFiles = localStorage.getItem('incomeFiles');
+      if (savedFiles) {
+        const filesData = JSON.parse(savedFiles);
+        setIncomes(prevIncomes => 
+          prevIncomes.map(income => ({
+            ...income,
+            files: filesData[income.id] || []
+          }))
+        );
+      }
+    };
+
+    loadData();
+  }, [refreshTrigger]);
 
   // Save files to localStorage when they change
   useEffect(() => {
@@ -111,7 +269,7 @@ const IncomeMaster = () => {
     localStorage.setItem('incomeFiles', JSON.stringify(filesData));
   }, [incomes]);
 
-    const getCategoryName = (id) => {
+  const getCategoryName = (id) => {
     const category = categories.find((c) => c.id === id);
     return category ? category.name : "N/A";
   };
@@ -127,22 +285,22 @@ const IncomeMaster = () => {
     
     const lowerSearchTerm = searchTerm.toLowerCase();
     return incomes.filter(income => 
-      income.payer_name.toLowerCase().includes(lowerSearchTerm) ||
-      income.description.toLowerCase().includes(lowerSearchTerm) ||
-      getCategoryName(income.category_id).toLowerCase().includes(lowerSearchTerm) ||
-      getPaymentModeName(income.payment_mode_id).toLowerCase().includes(lowerSearchTerm) ||
-      income.amount.toString().includes(lowerSearchTerm) ||
-      income.date.includes(lowerSearchTerm) ||
-      income.bill_id.toLowerCase().includes(lowerSearchTerm)
+      income.payer_name?.toLowerCase().includes(lowerSearchTerm) ||
+      income.description?.toLowerCase().includes(lowerSearchTerm) ||
+      getCategoryName(income.category_id)?.toLowerCase().includes(lowerSearchTerm) ||
+      getPaymentModeName(income.payment_mode_id)?.toLowerCase().includes(lowerSearchTerm) ||
+      income.amount?.toString().includes(lowerSearchTerm) ||
+      income.date?.includes(lowerSearchTerm) ||
+      income.bill_id?.toLowerCase().includes(lowerSearchTerm)
     );
-  }, [incomes, searchTerm]);
+  }, [incomes, searchTerm, getCategoryName, getPaymentModeName]);
 
   const validateForm = (incomeData) => {
     const newErrors = {};
     if (!incomeData.date) newErrors.date = "Please select date";
     if (!incomeData.category_id)
       newErrors.category_id = "Please select category";
-    if (!incomeData.payer_name.trim())
+    if (!incomeData.payer_name?.trim())
       newErrors.payer_name = "Please enter payer name";
     if (!incomeData.amount || isNaN(incomeData.amount))
       newErrors.amount = "Please enter valid amount";
@@ -196,30 +354,41 @@ const IncomeMaster = () => {
     }, 300);
   };
 
-  const handleDelete = () => {
-    setIncomes(incomes.filter((income) => income.id !== selectedIncome.id));
-    closeModal();
+  const handleDelete = async () => {
+    try {
+      await deleteIncome(selectedIncome.id);
+      setIncomes(incomes.filter((income) => income.id !== selectedIncome.id));
+      closeModal();
+    } catch (error) {
+      alert('Failed to delete income record');
+    }
   };
 
-  const handleAddIncome = () => {
-    if (!validateForm(newIncome)) return;
+  const handleAddIncome = async (incomeData) => {
+    if (!validateForm(incomeData)) return;
 
-    const newId =
-      incomes.length > 0 ? Math.max(...incomes.map((i) => i.id)) + 1 : 1;
-    setIncomes([...incomes, { ...newIncome, id: newId }]);
-    closeModal();
+    try {
+      await addIncome(incomeData);
+      setRefreshTrigger(prev => prev + 1);
+      closeModal();
+    } catch (error) {
+      alert('Failed to add income record');
+    }
   };
 
-  const handleUpdateIncome = () => {
+  const handleUpdateIncome = async () => {
     if (!validateForm(selectedIncome)) return;
 
-    setIncomes(
-      incomes.map((i) => (i.id === selectedIncome.id ? selectedIncome : i))
-    );
-    closeModal();
+    try {
+      await updateIncome(selectedIncome.id, selectedIncome);
+      setIncomes(
+        incomes.map((i) => (i.id === selectedIncome.id ? selectedIncome : i))
+      );
+      closeModal();
+    } catch (error) {
+      alert('Failed to update income record');
+    }
   };
-
-
 
   const openBillModal = (income) => {
     setBillData(income);
@@ -239,7 +408,6 @@ const IncomeMaster = () => {
     const files = Array.from(e.target.files);
     
     if (incomeId) {
-      // Editing existing income
       setIncomes(prevIncomes => 
         prevIncomes.map(income => 
           income.id === incomeId 
@@ -248,7 +416,6 @@ const IncomeMaster = () => {
         )
       );
     } else {
-      // Adding new income
       setNewIncome(prev => ({
         ...prev,
         files: [...prev.files, ...files]
@@ -290,937 +457,254 @@ const IncomeMaster = () => {
     URL.revokeObjectURL(url);
   };
 
-const downloadPdf = () => {
-  if (!billData) return;
+  const downloadPdf = () => {
+    if (!billData) return;
 
-  const doc = new jsPDF();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 14;
-  let yPosition = margin;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 14;
+    let yPosition = margin;
 
-  // Header
-  doc.setFontSize(18);
-  doc.setTextColor(0, 0, 255); // Blue color
-  doc.text("OMSAKTHI INVOICE", pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 8;
-  
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0); // Black color
-  doc.text("Omsakthi Kovil, Melmaruvathur", pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 5;
-  doc.text("Melmaruvathur, Tamil Nadu, India", pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 5;
-  doc.text("GSTIN: 33ABCDE1234F1Z5", pageWidth / 2, yPosition, { align: "center" });
-  yPosition += 15;
+    // Header
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 255);
+    doc.text("OMSAKTHI INVOICE", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 8;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Omsakthi Kovil, Melmaruvathur", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.text("Melmaruvathur, Tamil Nadu, India", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 5;
+    doc.text("GSTIN: 33ABCDE1234F1Z5", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 15;
 
-  // From/To sections
-  doc.setFontSize(11);
-  doc.setFont(undefined, 'bold');
-  doc.text("From:", margin, yPosition);
-  doc.text("To:", pageWidth - margin, yPosition, { align: "right" });
-  yPosition += 5;
-  
-  doc.setFont(undefined, 'normal');
-  // From details
-  doc.text("Omsakthi Kovil", margin, yPosition);
-  doc.text("Melmaruvathur", margin, yPosition + 5);
-  doc.text("Tamil Nadu, India", margin, yPosition + 10);
-  doc.text("Phone: +91 1234567890", margin, yPosition + 15);
-  
-  // To details (right aligned)
-  doc.text("Harini", pageWidth - margin, yPosition, { align: "right" });
-  doc.text("Trichy", pageWidth - margin, yPosition + 5, { align: "right" });
-  doc.text("Tamil Nadu, India", pageWidth - margin, yPosition + 10, { align: "right" });
-  doc.text("Phone: +91 9876543210", pageWidth - margin, yPosition + 15, { align: "right" });
-  
-  yPosition += 25;
+    // From/To sections
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.text("From:", margin, yPosition);
+    doc.text("To:", pageWidth - margin, yPosition, { align: "right" });
+    yPosition += 5;
+    
+    doc.setFont(undefined, 'normal');
+    doc.text("Omsakthi Kovil", margin, yPosition);
+    doc.text("Melmaruvathur", margin, yPosition + 5);
+    doc.text("Tamil Nadu, India", margin, yPosition + 10);
+    doc.text("Phone: +91 1234567890", margin, yPosition + 15);
+    
+    doc.text(billData.payer_name || "Customer", pageWidth - margin, yPosition, { align: "right" });
+    doc.text("Trichy", pageWidth - margin, yPosition + 5, { align: "right" });
+    doc.text("Tamil Nadu, India", pageWidth - margin, yPosition + 10, { align: "right" });
+    doc.text("Phone: +91 9876543210", pageWidth - margin, yPosition + 15, { align: "right" });
+    
+    yPosition += 25;
 
-  // Invoice details
-  doc.setFont(undefined, 'bold');
-  doc.text(`Invoice #: ${billData?.bill_id || "OM-2023-001"}`, margin, yPosition);
-  doc.text(`Issue Date: ${billData?.date || new Date().toISOString().split('T')[0]}`, margin, yPosition + 5);
-  
-  doc.text(`Payment Method: ${getPaymentModeName(billData?.payment_mode_id)}`, pageWidth - margin, yPosition, { align: "right" });
-  doc.text("Status: Paid", pageWidth - margin, yPosition + 5, { align: "right" });
-  
-  yPosition += 15;
+    // Invoice details
+    doc.setFont(undefined, 'bold');
+    doc.text(`Invoice #: ${billData?.bill_id || "OM-2023-001"}`, margin, yPosition);
+    doc.text(`Issue Date: ${billData?.date || new Date().toISOString().split('T')[0]}`, margin, yPosition + 5);
+    
+    doc.text(`Payment Method: ${getPaymentModeName(billData?.payment_mode_id)}`, pageWidth - margin, yPosition, { align: "right" });
+    doc.text("Status: Paid", pageWidth - margin, yPosition + 5, { align: "right" });
+    
+    yPosition += 15;
 
-  // Table header
-  const tableHeaders = [["Description", "Category", "Quantity", "Rate", "Amount"]];
-  const tableData = [
-    [
-      "Kunguma Kapu Pooja",
-      getCategoryName(billData?.category_id) || "Religious Services",
-      "1",
-      `₹${parseFloat(billData?.amount || 500).toFixed(2)}`,
-      `₹${parseFloat(billData?.amount || 500).toFixed(2)}`
-    ],
-    [
-      "Sandhana Kapu Pooja",
-      getCategoryName(billData?.category_id) || "Religious Services",
-      "1",
-      `₹${parseFloat(billData?.amount || 300).toFixed(2)}`,
-      `₹${parseFloat(billData?.amount || 300).toFixed(2)}`
-    ]
-  ];
+    // Table
+    const tableHeaders = [["Description", "Category", "Quantity", "Rate", "Amount"]];
+    const tableData = [
+      [
+        billData.description || "Religious Service",
+        getCategoryName(billData?.category_id) || "Religious Services",
+        "1",
+        `₹${parseFloat(billData?.amount || 0).toFixed(2)}`,
+        `₹${parseFloat(billData?.amount || 0).toFixed(2)}`
+      ]
+    ];
 
-  // Calculate totals
-  const subtotal = (billData?.amount || 500) + (billData?.amount || 300);
-  const gst = subtotal * 0.18;
-  const total = subtotal + gst;
+    const subtotal = parseFloat(billData?.amount || 0);
+    const gst = subtotal * 0.18;
+    const total = subtotal + gst;
 
-  // Add summary rows
-  const summaryRows = [
-    [
-      {content: "", colSpan: 3, styles: {halign: 'left'}},
-      {content: "Subtotal", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
-      {content: `₹${subtotal.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
-    ],
-    [
-      {content: "", colSpan: 3, styles: {halign: 'left'}},
-      {content: "GST (18%)", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
-      {content: `₹${gst.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
-    ],
-    [
-      {content: "", colSpan: 3, styles: {halign: 'left'}},
-      {content: "Total", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
-      {content: `₹${total.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
-    ]
-  ];
+    const summaryRows = [
+      [
+        {content: "", colSpan: 3, styles: {halign: 'left'}},
+        {content: "Subtotal", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
+        {content: `₹${subtotal.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
+      ],
+      [
+        {content: "", colSpan: 3, styles: {halign: 'left'}},
+        {content: "GST (18%)", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
+        {content: `₹${gst.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
+      ],
+      [
+        {content: "", colSpan: 3, styles: {halign: 'left'}},
+        {content: "Total", colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}},
+        {content: `₹${total.toFixed(2)}`, colSpan: 1, styles: {halign: 'right', fontStyle: 'bold'}}
+      ]
+    ];
 
-  // Create the table
-  doc.autoTable({
-    startY: yPosition,
-    head: tableHeaders,
-    body: [...tableData, ...summaryRows],
-    theme: 'grid',
-    headStyles: {
-      fillColor: [244, 67, 54], // Red header
-      textColor: 255,
-      fontStyle: 'bold'
-    },
-    styles: {
-      fontSize: 10,
-      cellPadding: 3
-    },
-    columnStyles: {
-      0: {cellWidth: 'auto'},
-      1: {cellWidth: 'auto'},
-      2: {cellWidth: 'auto'},
-      3: {cellWidth: 'auto'},
-      4: {cellWidth: 'auto'}
-    }
-  });
+    doc.autoTable({
+      startY: yPosition,
+      head: tableHeaders,
+      body: [...tableData, ...summaryRows],
+      theme: 'grid',
+      headStyles: {
+        fillColor: [244, 67, 54],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3
+      }
+    });
 
-  // Get the final Y position after the table
-  const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = doc.lastAutoTable.finalY + 10;
 
-  // Footer content
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'bold');
-  doc.text("Payment Terms:", margin, finalY);
-  doc.setFont(undefined, 'normal');
-  doc.text("Net 15 days", margin + 30, finalY);
-  
-  doc.setFont(undefined, 'bold');
-  doc.text("Notes:", margin, finalY + 5);
-  doc.setFont(undefined, 'normal');
-  doc.text("Thank you for your devotion. May Goddess Sakthi bless you with prosperity and happiness.", margin + 15, finalY + 5);
-  
-  // Signature area
-  const signatureY = finalY + 15;
-  doc.text("Authorized Signature", pageWidth / 2, signatureY, { align: "center" });
-  
-  // Draw a line for signature
-  doc.line(pageWidth / 2 - 50, signatureY + 5, pageWidth / 2 + 50, signatureY + 5);
-  
-  doc.text("Omsakthi Management", pageWidth / 2, signatureY + 10, { align: "center" });
+    // Footer
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text("Payment Terms:", margin, finalY);
+    doc.setFont(undefined, 'normal');
+    doc.text("Net 15 days", margin + 30, finalY);
+    
+    doc.setFont(undefined, 'bold');
+    doc.text("Notes:", margin, finalY + 5);
+    doc.setFont(undefined, 'normal');
+    doc.text("Thank you for your devotion. May Goddess Sakthi bless you with prosperity and happiness.", margin + 15, finalY + 5);
+    
+    const signatureY = finalY + 15;
+    doc.text("Authorized Signature", pageWidth / 2, signatureY, { align: "center" });
+    doc.line(pageWidth / 2 - 50, signatureY + 5, pageWidth / 2 + 50, signatureY + 5);
+    doc.text("Omsakthi Management", pageWidth / 2, signatureY + 10, { align: "center" });
 
-  // Save the PDF
-  doc.save(`Omsakthi_Invoice_${billData?.bill_id || billData?.id || "receipt"}.pdf`);
-};
-
-  // Add Income Modal
-  const AddModal = () => {
-    const initialForm = {
-      date: "",
-      category_id: "",
-      subcategory_id: "",
-      variant_id: "",
-      description: "",
-      payer_name: "",
-      amount: "",
-      payment_mode_id: "",
-      bill_id: "",
-      files: [],
-    };
-
-    const [newIncome, setNewIncome] = useState(initialForm);
-    const [errors, setErrors] = useState({});
-
-    const handleReset = () => {
-      setNewIncome(initialForm);
-      setErrors({});
-    };
-
-    const handleClose = () => {
-      handleReset();
-      closeModal();
-    };
-
-    const handleAddIncome = () => {
-      if (!validateForm(newIncome)) return;
-
-      const newId =
-        incomes.length > 0 ? Math.max(...incomes.map((i) => i.id)) + 1 : 1;
-      setIncomes([...incomes, { ...newIncome, id: newId }]);
-      handleReset();
-      closeModal();
-    };
-
-    const handleFileUpload = (e) => {
-      const files = Array.from(e.target.files);
-      setNewIncome(prev => ({
-        ...prev,
-        files: [...prev.files, ...files]
-      }));
-    };
-
-    const removeFile = (fileIndex) => {
-      setNewIncome(prev => ({
-        ...prev,
-        files: prev.files.filter((_, index) => index !== fileIndex)
-      }));
-    };
-
-    return (
-      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
-        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
-
-        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
-          <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">Add Income Record</h2>
-            <button onClick={handleClose} className="thaniya-normal-close">
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="thaniya-normal-body">
-            <Form>
-              <Row>
-                <Col md={6}>
-                  {/* Date */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Date</Form.Label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <Calendar size={16} />
-                      </span>
-                      <Form.Control
-                        type="date"
-                        className="form-control-lg"
-                        value={newIncome.date}
-                        onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
-                        isInvalid={!!errors.date}
-                      />
-                      <Form.Control.Feedback type="invalid">{errors.date}</Form.Control.Feedback>
-                    </div>
-                  </Form.Group>
-
-                  {/* Category */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Category</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={newIncome.category_id}
-                      onChange={(e) =>
-                        setNewIncome({
-                          ...newIncome,
-                          category_id: e.target.value,
-                          subcategory_id: "",
-                          variant_id: "",
-                        })
-                      }
-                      isInvalid={!!errors.category_id}
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{errors.category_id}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Subcategory */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Subcategory</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={newIncome.subcategory_id}
-                      onChange={(e) =>
-                        setNewIncome({ ...newIncome, subcategory_id: e.target.value, variant_id: "" })
-                      }
-                      isInvalid={!!errors.subcategory_id}
-                    >
-                      <option value="">Select Subcategory</option>
-                      {subcategories
-                        .filter((sc) => sc.category_id === parseInt(newIncome.category_id))
-                        .map((sc) => (
-                          <option key={sc.id} value={sc.id}>
-                            {sc.name}
-                          </option>
-                        ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{errors.subcategory_id}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Variant */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Variant</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={newIncome.variant_id}
-                      onChange={(e) => setNewIncome({ ...newIncome, variant_id: e.target.value })}
-                      isInvalid={!!errors.variant_id}
-                    >
-                      <option value="">Select Variant</option>
-                      {variants
-                        .filter((v) => v.subcategory_id === parseInt(newIncome.subcategory_id))
-                        .map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name}
-                          </option>
-                        ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{errors.variant_id}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Description */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      className="form-control-lg"
-                      placeholder="Enter description"
-                      value={newIncome.description}
-                      onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  {/* Payer Name */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Payer Name</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter payer name"
-                      value={newIncome.payer_name}
-                      onChange={(e) => setNewIncome({ ...newIncome, payer_name: e.target.value })}
-                      isInvalid={!!errors.payer_name}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.payer_name}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Amount */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Amount</Form.Label>
-                    <Form.Control
-                      type="number"
-                      className="form-control-lg"
-                      placeholder="Enter amount"
-                      value={newIncome.amount}
-                      onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })}
-                      isInvalid={!!errors.amount}
-                    />
-                    <Form.Control.Feedback type="invalid">{errors.amount}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Payment Mode */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Payment Mode</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={newIncome.payment_mode_id}
-                      onChange={(e) => setNewIncome({ ...newIncome, payment_mode_id: e.target.value })}
-                      isInvalid={!!errors.payment_mode_id}
-                    >
-                      <option value="">Select Payment Mode</option>
-                      {paymentModes.map((pm) => (
-                        <option key={pm.id} value={pm.id}>
-                          {pm.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{errors.payment_mode_id}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  {/* Bill / Invoice ID */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Bill / Invoice ID</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter bill/invoice ID"
-                      value={newIncome.bill_id}
-                      onChange={(e) => setNewIncome({ ...newIncome, bill_id: e.target.value })}
-                    />
-                  </Form.Group>
-
-                  {/* File Upload */}
-                  <Form.Group className="mb-3">
-                    <Form.Label>Attach Files</Form.Label>
-                    <Form.Control
-                      type="file"
-                      className="form-control-lg"
-                      multiple
-                      onChange={handleFileUpload}
-                    />
-                    <Form.Text className="text-muted">
-                      You can attach multiple files (receipts, invoices, etc.)
-                    </Form.Text>
-                  </Form.Group>
-
-                  {/* File List */}
-                  {newIncome.files.length > 0 && (
-                    <div className="mb-3">
-                      <h6>Attached Files:</h6>
-                      <ul className="list-group">
-                        {newIncome.files.map((file, index) => (
-                          <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                            <span className="text-truncate" style={{maxWidth: '70%'}}>
-                              <Paperclip size={14} className="me-2" />
-                              {file.name}
-                            </span>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X size={14} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </Col>
-              </Row>
-            </Form>
-          </div>
-
-          <div className="thaniya-normal-footer">
-            <button onClick={handleReset} className="s-btn s-btn-light">
-              Reset
-            </button>
-            <button onClick={handleAddIncome} className="s-btn s-btn-grad-danger">
-              Save Income
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    doc.save(`Omsakthi_Invoice_${billData?.bill_id || billData?.id || "receipt"}.pdf`);
   };
 
-// Edit Income Modal
-const EditModal = () => (
-  <div
-    className={`thaniya-normal-overlay ${
-      isAnimating ? "thaniya-overlay-visible" : ""
-    }`}
-  >
-    <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-    <div
-      className={`thaniya-normal-modal ${
-        isAnimating ? "thaniya-normal-modal-visible" : ""
-      }`} style={{ maxWidth: "900px", width: "90%" }}
-    >
-      <div className="thaniya-normal-header">
-        <h2 className="thaniya-normal-title">Edit Income Record</h2>
-        <button onClick={closeModal} className="thaniya-normal-close">
-          <X size={20} />
-        </button>
-      </div>
-      <div className="thaniya-normal-body">
-        <Form>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Date</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <Calendar size={16} />
-                  </span>
-                  <Form.Control
-                    type="date"
-                    className="form-control-lg"
-                    value={selectedIncome?.date || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        date: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.date}
-                  />
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  {errors.date}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Category</Form.Label>
-                <select
-                  className="form-control form-control-lg"
-                  value={selectedIncome?.category_id || ""}
-                  onChange={(e) =>
-                    setSelectedIncome({
-                      ...selectedIncome,
-                      category_id: e.target.value,
-                    })
-                  }
-                  isInvalid={!!errors.category_id}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-                <Form.Control.Feedback type="invalid">
-                  {errors.category_id}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Subcategory</Form.Label>
-                <select
-                  className="form-control form-control-lg"
-                  value={selectedIncome?.subcategory_id || ""}
-                  onChange={(e) =>
-                    setSelectedIncome({
-                      ...selectedIncome,
-                      subcategory_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Select Subcategory</option>
-                  {subcategories
-                    .filter(
-                      (sc) =>
-                        sc.category_id ===
-                        parseInt(selectedIncome?.category_id || 0)
-                    )
-                    .map((subcategory) => (
-                      <option key={subcategory.id} value={subcategory.id}>
-                        {subcategory.name}
-                      </option>
-                    ))}
-                </select>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Variant</Form.Label>
-                <select
-                  className="form-control form-control-lg"
-                  value={selectedIncome?.variant_id || ""}
-                  onChange={(e) =>
-                    setSelectedIncome({
-                      ...selectedIncome,
-                      variant_id: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Select Variant</option>
-                  {variants
-                    .filter(
-                      (v) =>
-                        v.subcategory_id ===
-                        parseInt(selectedIncome?.subcategory_id || 0)
-                    )
-                    .map((variant) => (
-                      <option key={variant.id} value={variant.id}>
-                        {variant.name}
-                      </option>
-                    ))}
-                </select>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  className="form-control-lg"
-                  placeholder="Enter description"
-                  value={selectedIncome?.description || ""}
-                  onChange={(e) =>
-                    setSelectedIncome({
-                      ...selectedIncome,
-                      description: e.target.value,
-                    })
-                  }
-                />
-              </Form.Group>
-            </Col>
-
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Payer Name</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <User size={16} />
-                  </span>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter payer name"
-                    value={selectedIncome?.payer_name || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        payer_name: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.payer_name}
-                  />
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  {errors.payer_name}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Amount</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <DollarSign size={16} />
-                  </span>
-                  <Form.Control
-                    type="number"
-                    className="form-control-lg"
-                    placeholder="Enter amount"
-                    value={selectedIncome?.amount || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        amount: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.amount}
-                  />
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  {errors.amount}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Payment Mode</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <CreditCard size={16} />
-                  </span>
-                  <select
-                    className="form-control form-control-lg"
-                    value={selectedIncome?.payment_mode_id || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        payment_mode_id: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.payment_mode_id}
-                  >
-                    <option value="">Select Payment Mode</option>
-                    {paymentModes.map((mode) => (
-                      <option key={mode.id} value={mode.id}>
-                        {mode.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Form.Control.Feedback type="invalid">
-                  {errors.payment_mode_id}
-                </Form.Control.Feedback>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Bill/Invoice ID</Form.Label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <FileText size={16} />
-                  </span>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter bill/invoice ID"
-                    value={selectedIncome?.bill_id || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        bill_id: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </Form.Group>
-
-              {/* File Upload in Edit Modal */}
-              <Form.Group className="mb-3">
-                <Form.Label>Attach More Files</Form.Label>
-                <Form.Control
-                  type="file"
-                  className="form-control-lg"
-                  multiple
-                  onChange={(e) => handleFileUpload(e, selectedIncome?.id)}
-                />
-              </Form.Group>
-
-              {/* File List in Edit Modal */}
-              {selectedIncome?.files && selectedIncome.files.length > 0 && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Attached Files</Form.Label>
-                  <div className="list-group">
-                    {selectedIncome.files.map((file, index) => (
-                      <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center">
-                          <Paperclip size={14} className="me-2" />
-                          <span className="text-truncate" style={{maxWidth: '150px'}}>
-                            {file.name}
-                          </span>
-                        </div>
-                        <div>
-                          <button 
-                            className="btn btn-sm btn-outline-primary me-1"
-                            onClick={() => openFileModal(file)}
-                            title="View"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-outline-success me-1"
-                            onClick={() => downloadFile(file)}
-                            title="Download"
-                          >
-                            <Download size={14} />
-                          </button>
-                          <button 
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={() => removeFile(selectedIncome.id, index)}
-                            title="Remove"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Form.Group>
-              )}
-            </Col>
-          </Row>
-        </Form>
-      </div>
-      <div className="thaniya-normal-footer">
-        <button onClick={closeModal} className="s-btn s-btn-light">
-          Cancel
-        </button>
-        <button
-          onClick={handleUpdateIncome}
-          className="s-btn s-btn-grad-danger"
-        >
-          Update Income
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-  // Delete Confirmation Modal
-  const DeleteModal = () => (
-    <div
-      className={`thaniya-normal-overlay ${
-        isAnimating ? "thaniya-overlay-visible" : ""
-      }`}
-    >
-      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+  // Bill Modal Component
+  const BillModalComponent = () => (
+    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={closeBillModal}></div>
       <div
-        className={`thaniya-normal-modal ${
-          isAnimating ? "thaniya-normal-modal-visible" : ""
-        }`}
-        style={{ maxWidth: "500px" }}
+        className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`}
+        style={{
+          maxWidth: "800px",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Confirm Delete</h2>
-          <button onClick={closeModal} className="thaniya-normal-close">
+        <div className="thaniya-normal-header d-flex justify-content-between align-items-center p-3 border-bottom">
+          <h2 className="thaniya-normal-title m-0">Omsakthi Bill/Invoice</h2>
+          <button onClick={closeBillModal} className="thaniya-normal-close btn btn-link">
             <X size={20} />
           </button>
         </div>
-        <div className="thaniya-normal-body">
-          <p>
-            Are you sure you want to delete income record from{" "}
-            <strong>{selectedIncome?.payer_name}</strong> dated{" "}
-            <strong>{selectedIncome?.date}</strong>?
-          </p>
-          <p>This action cannot be undone.</p>
+
+        <div
+          className="thaniya-normal-body"
+          style={{ overflowY: "auto", flex: 1, padding: "20px" }}
+        >
+          <div className="bill-container">
+            <div className="bill-header text-center mb-4">
+              <h2 className="text-primary">OMSAKTHI INVOICE</h2>
+              <p className="mb-1 fw-bold">Omsakthi Kovil, Melmaruvathur</p>
+              <p>Melmaruvathur, Tamil Nadu, India</p>
+              <p>GSTIN: 33ABCDE1234F1Z5</p>
+            </div>
+
+            <div className="row mb-4">
+              <div className="col-md-6">
+                <p><strong>From:</strong></p>
+                <p className="mb-1 fw-bold">Omsakthi Kovil</p>
+                <p className="mb-1">Melmaruvathur</p>
+                <p className="mb-1">Tamil Nadu, India</p>
+                <p>Phone: +91 1234567890</p>
+              </div>
+              <div className="col-md-6 text-end">
+                <p><strong>To:</strong></p>
+                <p className="mb-1 fw-bold">{billData?.payer_name || "Customer"}</p>
+                <p className="mb-1">Trichy</p>
+                <p className="mb-1">Tamil Nadu, India</p>
+                <p>Phone: +91 9876543210</p>
+              </div>
+            </div>
+
+            <div className="row mb-4">
+              <div className="col-md-6">
+                <p><strong>Invoice #:</strong> {billData?.bill_id || "OM-2023-001"}</p>
+                <p><strong>Issue Date:</strong> {billData?.date || new Date().toISOString().split('T')[0]}</p>
+              </div>
+              <div className="col-md-6 text-end">
+                <p><strong>Payment Method:</strong> {getPaymentModeName(billData?.payment_mode_id)}</p>
+                <p><strong>Status:</strong> <Badge bg="success">Paid</Badge></p>
+              </div>
+            </div>
+
+            <Table bordered className="mb-4">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Quantity</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{billData?.description || "Religious Service"}</td>
+                  <td>{getCategoryName(billData?.category_id) || "Religious Services"}</td>
+                  <td>1</td>
+                  <td>₹{parseFloat(billData?.amount || 0).toFixed(2)}</td>
+                  <td>₹{parseFloat(billData?.amount || 0).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td colSpan="3"></td>
+                  <td className="text-end"><strong>Subtotal</strong></td>
+                  <td><strong>₹{parseFloat(billData?.amount || 0).toFixed(2)}</strong></td>
+                </tr>
+                <tr>
+                  <td colSpan="3"></td>
+                  <td className="text-end"><strong>GST (18%)</strong></td>
+                  <td><strong>₹{parseFloat((billData?.amount || 0) * 0.18).toFixed(2)}</strong></td>
+                </tr>
+                <tr>
+                  <td colSpan="3"></td>
+                  <td className="text-end"><strong>Total</strong></td>
+                  <td><strong>₹{parseFloat((billData?.amount || 0) * 1.18).toFixed(2)}</strong></td>
+                </tr>
+              </tbody>
+            </Table>
+
+            <div className="bill-footer mt-4">
+              <p className="mb-2"><strong>Payment Terms:</strong> Net 15 days</p>
+              <p className="mb-2"><strong>Notes:</strong> Thank you for your devotion. May Goddess Sakthi bless you with prosperity and happiness.</p>
+              <div className="text-center mt-4">
+                <p>Authorized Signature</p>
+                <div className="border-top pt-2" style={{width: '200px', margin: '0 auto'}}>
+                  <p className="mb-0">Omsakthi Management</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="thaniya-normal-footer">
-          <button onClick={closeModal} className="s-btn s-btn-light">
-            Cancel
+
+        <div className="thaniya-normal-footer d-flex justify-content-end gap-2 p-3 border-top">
+          <button onClick={closeBillModal} className="s-btn s-btn-light">
+            Close
           </button>
-          <button onClick={handleDelete} className="s-btn s-btn-grad-danger">
-            Delete Record
+          <button onClick={downloadPdf} className="s-btn s-btn-grad-danger">
+            <Download size={16} className="me-2" /> Download PDF
           </button>
         </div>
       </div>
     </div>
   );
 
-const BillModal = () => (
-  <div
-    className={`thaniya-normal-overlay ${
-      isAnimating ? "thaniya-overlay-visible" : ""
-    }`}
-  >
-    <div className="thaniya-normal-backdrop" onClick={closeBillModal}></div>
-    <div
-      className={`thaniya-normal-modal ${
-        isAnimating ? "thaniya-normal-modal-visible" : ""
-      }`}
-      style={{
-        maxWidth: "800px",
-        maxHeight: "90vh",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      {/* Header (fixed) */}
-      <div className="thaniya-normal-header d-flex justify-content-between align-items-center p-3 border-bottom">
-        <h2 className="thaniya-normal-title m-0">Omsakthi Bill/Invoice</h2>
-        <button onClick={closeBillModal} className="thaniya-normal-close btn btn-link">
-          <X size={20} />
-        </button>
-      </div>
-
-      {/* Body (scrollable) */}
-      <div
-        className="thaniya-normal-body"
-        style={{ overflowY: "auto", flex: 1, padding: "20px" }}
-      >
-        <div className="bill-container">
-          <div className="bill-header text-center mb-4">
-            <h2 className="text-primary">OMSAKTHI INVOICE</h2>
-            <p className="mb-1 fw-bold">Omsakthi Kovil, Melmaruvathur</p>
-            <p>Melmaruvathur, Tamil Nadu, India</p>
-            <p>GSTIN: 33ABCDE1234F1Z5</p>
-          </div>
-
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <p><strong>From:</strong></p>
-              <p className="mb-1 fw-bold">Omsakthi Kovil</p>
-              <p className="mb-1">Melmaruvathur</p>
-              <p className="mb-1">Tamil Nadu, India</p>
-              <p>Phone: +91 1234567890</p>
-            </div>
-            <div className="col-md-6 text-end">
-              <p><strong>To:</strong></p>
-              <p className="mb-1 fw-bold">Harini</p>
-              <p className="mb-1">Trichy</p>
-              <p className="mb-1">Tamil Nadu, India</p>
-              <p>Phone: +91 9876543210</p>
-            </div>
-          </div>
-
-          <div className="row mb-4">
-            <div className="col-md-6">
-              <p><strong>Invoice #:</strong> {billData?.bill_id || "OM-2023-001"}</p>
-              <p><strong>Issue Date:</strong> {billData?.date || new Date().toISOString().split('T')[0]}</p>
-            </div>
-            <div className="col-md-6 text-end">
-              <p><strong>Payment Method:</strong> {getPaymentModeName(billData?.payment_mode_id)}</p>
-              <p><strong>Status:</strong> <Badge bg="success">Paid</Badge></p>
-            </div>
-          </div>
-
-          <Table bordered className="mb-4">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Rate</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Kunguma Kapu Pooja</td>
-                <td>{getCategoryName(billData?.category_id) || "Religious Services"}</td>
-                <td>1</td>
-                <td>₹{parseFloat(billData?.amount || 500).toFixed(2)}</td>
-                <td>₹{parseFloat(billData?.amount || 500).toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Sandhana Kapu Pooja</td>
-                <td>{getCategoryName(billData?.category_id) || "Religious Services"}</td>
-                <td>1</td>
-                <td>₹{parseFloat(billData?.amount || 300).toFixed(2)}</td>
-                <td>₹{parseFloat(billData?.amount || 300).toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td colSpan="3"></td>
-                <td className="text-end"><strong>Subtotal</strong></td>
-                <td><strong>₹{parseFloat((billData?.amount || 500) + (billData?.amount || 300)).toFixed(2)}</strong></td>
-              </tr>
-              <tr>
-                <td colSpan="3"></td>
-                <td className="text-end"><strong>GST (18%)</strong></td>
-                <td><strong>₹{parseFloat(((billData?.amount || 500) + (billData?.amount || 300)) * 0.18).toFixed(2)}</strong></td>
-              </tr>
-              <tr>
-                <td colSpan="3"></td>
-                <td className="text-end"><strong>Total</strong></td>
-                <td><strong>₹{parseFloat(((billData?.amount || 500) + (billData?.amount || 300)) * 1.18).toFixed(2)}</strong></td>
-              </tr>
-            </tbody>
-          </Table>
-
-          <div className="bill-footer mt-4">
-            <p className="mb-2"><strong>Payment Terms:</strong> Net 15 days</p>
-            <p className="mb-2"><strong>Notes:</strong> Thank you for your devotion. May Goddess Sakthi bless you with prosperity and happiness.</p>
-            <div className="text-center mt-4">
-              <p>Authorized Signature</p>
-              <div className="border-top pt-2" style={{width: '200px', margin: '0 auto'}}>
-                <p className="mb-0">Omsakthi Management</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer (fixed) */}
-      <div className="thaniya-normal-footer d-flex justify-content-end gap-2 p-3 border-top">
-        <button onClick={closeBillModal} className="s-btn s-btn-light">
-          Close
-        </button>
-        <button onClick={downloadPdf} className="s-btn s-btn-grad-danger">
-          <i className="fas fa-download me-2"></i> Download PDF
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
-
-  // File Preview Modal
-  const FileModal = () => {
+  // File Preview Modal Component
+  const FileModalComponent = () => {
     if (!selectedFile) return null;
 
     const isImage = selectedFile.type.startsWith('image/');
@@ -1288,24 +772,634 @@ const BillModal = () => (
     );
   };
 
-  // Files Tab Content
+  // Add Income Modal Component
+  const AddModal = () => {
+    const initialForm = {
+      date: new Date().toISOString().split("T")[0],
+      category_id: "",
+      subcategory_id: "",
+      variant_id: "",
+      description: "",
+      payer_name: "",
+      amount: "",
+      payment_mode_id: "",
+      bill_id: "",
+      status: 1,
+      files: [],
+    };
+
+    const [localIncome, setLocalIncome] = useState(initialForm);
+    const [localErrors, setLocalErrors] = useState({});
+
+    const handleReset = () => {
+      setLocalIncome(initialForm);
+      setLocalErrors({});
+    };
+
+    const handleClose = () => {
+      handleReset();
+      closeModal();
+    };
+
+    const handleAdd = async () => {
+      if (!validateForm(localIncome)) return;
+
+      try {
+        await handleAddIncome(localIncome);
+        handleReset();
+      } catch (error) {
+        // Error handled in handleAddIncome
+      }
+    };
+
+    const handleFileUpload = (e) => {
+      const files = Array.from(e.target.files);
+      setLocalIncome(prev => ({
+        ...prev,
+        files: [...prev.files, ...files]
+      }));
+    };
+
+    const removeFile = (fileIndex) => {
+      setLocalIncome(prev => ({
+        ...prev,
+        files: prev.files.filter((_, index) => index !== fileIndex)
+      }));
+    };
+
+    return (
+      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+
+        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Add Income Record</h2>
+            <button onClick={handleClose} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="thaniya-normal-body">
+            {apiError && <Alert variant="danger">{apiError}</Alert>}
+            <Form>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <Calendar size={16} />
+                      </span>
+                      <Form.Control
+                        type="date"
+                        className="form-control-lg"
+                        value={localIncome.date}
+                        onChange={(e) => setLocalIncome({ ...localIncome, date: e.target.value })}
+                        isInvalid={!!localErrors.date}
+                      />
+                      <Form.Control.Feedback type="invalid">{localErrors.date}</Form.Control.Feedback>
+                    </div>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Category</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={localIncome.category_id}
+                      onChange={(e) =>
+                        setLocalIncome({
+                          ...localIncome,
+                          category_id: e.target.value,
+                          subcategory_id: "",
+                          variant_id: "",
+                        })
+                      }
+                      isInvalid={!!localErrors.category_id}
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Subcategory</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={localIncome.subcategory_id}
+                      onChange={(e) =>
+                        setLocalIncome({ ...localIncome, subcategory_id: e.target.value, variant_id: "" })
+                      }
+                    >
+                      <option value="">Select Subcategory</option>
+                      {subcategories
+                        .filter((sc) => sc.category_id === parseInt(localIncome.category_id))
+                        .map((sc) => (
+                          <option key={sc.id} value={sc.id}>
+                            {sc.name}
+                          </option>
+                        ))}
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Variant</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={localIncome.variant_id}
+                      onChange={(e) => setLocalIncome({ ...localIncome, variant_id: e.target.value })}
+                    >
+                      <option value="">Select Variant</option>
+                      {variants
+                        .filter((v) => v.subcategory_id === parseInt(localIncome.subcategory_id))
+                        .map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.name}
+                          </option>
+                        ))}
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      className="form-control-lg"
+                      placeholder="Enter description"
+                      value={localIncome.description}
+                      onChange={(e) => setLocalIncome({ ...localIncome, description: e.target.value })}
+                    />
+                  </Form.Group>
+                </Col>
+
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Payer Name</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter payer name"
+                      value={localIncome.payer_name}
+                      onChange={(e) => setLocalIncome({ ...localIncome, payer_name: e.target.value })}
+                      isInvalid={!!localErrors.payer_name}
+                    />
+                    <Form.Control.Feedback type="invalid">{localErrors.payer_name}</Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Amount</Form.Label>
+                    <Form.Control
+                      type="number"
+                      className="form-control-lg"
+                      placeholder="Enter amount"
+                      value={localIncome.amount}
+                      onChange={(e) => setLocalIncome({ ...localIncome, amount: e.target.value })}
+                      isInvalid={!!localErrors.amount}
+                    />
+                    <Form.Control.Feedback type="invalid">{localErrors.amount}</Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Payment Mode</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={localIncome.payment_mode_id}
+                      onChange={(e) => setLocalIncome({ ...localIncome, payment_mode_id: e.target.value })}
+                      isInvalid={!!localErrors.payment_mode_id}
+                    >
+                      <option value="">Select Payment Mode</option>
+                      {paymentModes.map((pm) => (
+                        <option key={pm.id} value={pm.id}>
+                          {pm.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">{localErrors.payment_mode_id}</Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Bill / Invoice ID</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter bill/invoice ID"
+                      value={localIncome.bill_id}
+                      onChange={(e) => setLocalIncome({ ...localIncome, bill_id: e.target.value })}
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Attach Files</Form.Label>
+                    <Form.Control
+                      type="file"
+                      className="form-control-lg"
+                      multiple
+                      onChange={handleFileUpload}
+                    />
+                    <Form.Text className="text-muted">
+                      You can attach multiple files (receipts, invoices, etc.)
+                    </Form.Text>
+                  </Form.Group>
+
+                  {localIncome.files.length > 0 && (
+                    <div className="mb-3">
+                      <h6>Attached Files:</h6>
+                      <ul className="list-group">
+                        {localIncome.files.map((file, index) => (
+                          <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                            <span className="text-truncate" style={{maxWidth: '70%'}}>
+                              <Paperclip size={14} className="me-2" />
+                              {file.name}
+                            </span>
+                            <button 
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => removeFile(index)}
+                            >
+                              <X size={14} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </Col>
+              </Row>
+            </Form>
+          </div>
+
+          <div className="thaniya-normal-footer">
+            <button onClick={handleReset} className="s-btn s-btn-light">
+              Reset
+            </button>
+            <button onClick={handleAdd} className="s-btn s-btn-grad-danger">
+              Save Income
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Edit Income Modal Component
+  const EditModal = () => (
+    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+      <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "900px", width: "90%" }}>
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">Edit Income Record</h2>
+          <button onClick={closeModal} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="thaniya-normal-body">
+          {apiError && <Alert variant="danger">{apiError}</Alert>}
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <Calendar size={16} />
+                    </span>
+                    <Form.Control
+                      type="date"
+                      className="form-control-lg"
+                      value={selectedIncome?.date || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          date: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.date}
+                    />
+                  </div>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.date}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Category</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={selectedIncome?.category_id || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        category_id: e.target.value,
+                      })
+                    }
+                    isInvalid={!!errors.category_id}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.category_id}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Subcategory</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={selectedIncome?.subcategory_id || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        subcategory_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select Subcategory</option>
+                    {subcategories
+                      .filter(
+                        (sc) =>
+                          sc.category_id ===
+                          parseInt(selectedIncome?.category_id || 0)
+                      )
+                      .map((subcategory) => (
+                        <option key={subcategory.id} value={subcategory.id}>
+                          {subcategory.name}
+                        </option>
+                      ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Variant</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={selectedIncome?.variant_id || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        variant_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select Variant</option>
+                    {variants
+                      .filter(
+                        (v) =>
+                          v.subcategory_id ===
+                          parseInt(selectedIncome?.subcategory_id || 0)
+                      )
+                      .map((variant) => (
+                        <option key={variant.id} value={variant.id}>
+                          {variant.name}
+                        </option>
+                      ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    className="form-control-lg"
+                    placeholder="Enter description"
+                    value={selectedIncome?.description || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        description: e.target.value,
+                      })
+                    }
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Payer Name</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <User size={16} />
+                    </span>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter payer name"
+                      value={selectedIncome?.payer_name || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          payer_name: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.payer_name}
+                    />
+                  </div>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.payer_name}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Amount</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <DollarSign size={16} />
+                    </span>
+                    <Form.Control
+                      type="number"
+                      className="form-control-lg"
+                      placeholder="Enter amount"
+                      value={selectedIncome?.amount || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          amount: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.amount}
+                    />
+                  </div>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.amount}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Payment Mode</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <CreditCard size={16} />
+                    </span>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={selectedIncome?.payment_mode_id || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          payment_mode_id: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.payment_mode_id}
+                    >
+                      <option value="">Select Payment Mode</option>
+                      {paymentModes.map((mode) => (
+                        <option key={mode.id} value={mode.id}>
+                          {mode.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </div>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.payment_mode_id}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Bill/Invoice ID</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <FileText size={16} />
+                    </span>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter bill/invoice ID"
+                      value={selectedIncome?.bill_id || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          bill_id: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Attach More Files</Form.Label>
+                  <Form.Control
+                    type="file"
+                    className="form-control-lg"
+                    multiple
+                    onChange={(e) => handleFileUpload(e, selectedIncome?.id)}
+                  />
+                </Form.Group>
+
+                {selectedIncome?.files && selectedIncome.files.length > 0 && (
+                  <Form.Group className="mb-3">
+                    <Form.Label>Attached Files</Form.Label>
+                    <div className="list-group">
+                      {selectedIncome.files.map((file, index) => (
+                        <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                          <div className="d-flex align-items-center">
+                            <Paperclip size={14} className="me-2" />
+                            <span className="text-truncate" style={{maxWidth: '150px'}}>
+                              {file.name}
+                            </span>
+                          </div>
+                          <div>
+                            <button 
+                              className="btn btn-sm btn-outline-primary me-1"
+                              onClick={() => openFileModal(file)}
+                              title="View"
+                            >
+                              <Eye size={14} />
+                            </button>
+                            <button 
+                              className="btn btn-sm btn-outline-success me-1"
+                              onClick={() => downloadFile(file)}
+                              title="Download"
+                            >
+                              <Download size={14} />
+                            </button>
+                            <button 
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => removeFile(selectedIncome.id, index)}
+                              title="Remove"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Form.Group>
+                )}
+              </Col>
+            </Row>
+          </Form>
+        </div>
+        <div className="thaniya-normal-footer">
+          <button onClick={closeModal} className="s-btn s-btn-light">
+            Cancel
+          </button>
+          <button
+            onClick={handleUpdateIncome}
+            className="s-btn s-btn-grad-danger"
+          >
+            Update Income
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Delete Confirmation Modal Component
+  const DeleteModal = () => (
+    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+      <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "500px" }}>
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">Confirm Delete</h2>
+          <button onClick={closeModal} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="thaniya-normal-body">
+          <p>
+            Are you sure you want to delete income record from{" "}
+            <strong>{selectedIncome?.payer_name}</strong> dated{" "}
+            <strong>{selectedIncome?.date}</strong>?
+          </p>
+          <p>This action cannot be undone.</p>
+        </div>
+        <div className="thaniya-normal-footer">
+          <button onClick={closeModal} className="s-btn s-btn-light">
+            Cancel
+          </button>
+          <button onClick={handleDelete} className="s-btn s-btn-grad-danger">
+            Delete Record
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Files Tab Content Component
   const FilesTabContent = () => {
-    // Get all files from all income records
     const allFiles = incomes.flatMap(income => 
       income.files.map(file => ({ ...file, income }))
     );
 
-    // Filter files based on search term
     const filteredFiles = useMemo(() => {
       if (!searchTermFiles) return allFiles;
       
       const lowerSearchTerm = searchTermFiles.toLowerCase();
       return allFiles.filter(file => 
         file.name.toLowerCase().includes(lowerSearchTerm) ||
-        file.income.payer_name.toLowerCase().includes(lowerSearchTerm) ||
-        file.income.description.toLowerCase().includes(lowerSearchTerm) ||
-        file.income.date.includes(lowerSearchTerm) ||
-        file.income.bill_id.toLowerCase().includes(lowerSearchTerm)
+        file.income.payer_name?.toLowerCase().includes(lowerSearchTerm) ||
+        file.income.description?.toLowerCase().includes(lowerSearchTerm) ||
+        file.income.date?.includes(lowerSearchTerm) ||
+        file.income.bill_id?.toLowerCase().includes(lowerSearchTerm)
       );
     }, [allFiles, searchTermFiles]);
 
@@ -1407,6 +1501,8 @@ const BillModal = () => (
         pageContent="Income Management"
       />
 
+      {apiError && <Alert variant="danger" className="m-3">{apiError}</Alert>}
+
       <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
         <Card>
           <Card.Header className="s-card-header d-flex justify-content-between align-items-center">
@@ -1435,18 +1531,33 @@ const BillModal = () => (
               )}
             </div>
             
-            <Button
-              className="s-btn s-btn-grad-danger"
-              onClick={openAddModal}
-            >
-              + Add Income
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-primary"
+                onClick={() => setRefreshTrigger(prev => prev + 1)}
+                disabled={loading}
+              >
+                <RefreshCw size={16} className={loading ? "spinning" : ""} />
+              </Button>
+              <Button
+                className="s-btn s-btn-grad-danger"
+                onClick={openAddModal}
+                disabled={loading}
+              >
+                + Add Income
+              </Button>
+            </div>
           </Card.Header>
 
           <Tab.Content>
             <Tab.Pane eventKey="records">
               <div className="s-card-body">
-                {filteredIncomes.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-5">
+                    <Spinner animation="border" variant="primary" />
+                    <p className="mt-2">Loading income records...</p>
+                  </div>
+                ) : filteredIncomes.length === 0 ? (
                   <Alert variant="info" className="m-3">
                     {searchTerm ? 'No income records match your search.' : 'No income records found.'}
                   </Alert>
@@ -1526,8 +1637,18 @@ const BillModal = () => (
       {showAddModal && <AddModal />}
       {showEditModal && <EditModal />}
       {showDeleteModal && <DeleteModal />}
-      {showBillModal && <BillModal />}
-      {showFileModal && <FileModal />}
+      {showBillModal && <BillModalComponent />}
+      {showFileModal && <FileModalComponent />}
+
+      <style>{`
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Fragment>
   );
 };
