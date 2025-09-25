@@ -16,33 +16,56 @@ const SubCategoryMaster = () => {
   const [mainCategories, setMainCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
+  const [categories, setCategories] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
 
   // API base URL
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
-  // Fetch data from API
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [subCategoriesRes, mainCategoriesRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/subcategory/getall`),
-        axios.get(`${API_BASE_URL}/api/maincategory/getall`)
-      ]);
-      
-      setSubCategories(subCategoriesRes.data);
-      setMainCategories(mainCategoriesRes.data);
-      setApiError("");
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setApiError("Failed to fetch data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+
+
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("authtoken");
+        const response = await axios.get(`${API_BASE_URL}/subcategory/getall`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setSubCategories(response.data);
+        setApiError("");
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        setApiError(error.response?.data?.error || "Failed to fetch categories");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+const fetchCategories = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("authtoken");
+    const response = await axios.get(`${API_BASE_URL}/maincategory/get`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    setMainCategories(response.data); // Changed from setCategories to setMainCategories
+    setApiError("");
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    setApiError(error.response?.data?.error || "Failed to fetch categories");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchData();
+    fetchCategories();
   }, []);
 
   // Get main category name by ID
@@ -104,7 +127,7 @@ const SubCategoryMaster = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/subcategory/delete/${selectedSubCategory.id}`);
+      await axios.delete(`${API_BASE_URL}/subcategory/delete/${selectedSubCategory.id}`);
       
       setSubCategories(subCategories.filter(subCategory => subCategory.id !== selectedSubCategory.id));
       setSuccessMessage("Sub category deleted successfully!");
@@ -150,24 +173,30 @@ const SubCategoryMaster = () => {
       return Object.keys(newErrors).length === 0;
     };
 
-    const handleAddSubCategory = async () => {
-      if (!validateForm(newSubCategory)) return;
-      
-      try {
-        setSubmitting(true);
-        const response = await axios.post(`${API_BASE_URL}/api/subcategory/post`, newSubCategory);
-        
-        setSubCategories([...subCategories, response.data]);
-        setSuccessMessage("Sub category added successfully!");
-        setTimeout(() => setSuccessMessage(""), 3000);
-        closeModal();
-      } catch (error) {
-        console.error("Error adding sub category:", error);
-        setApiError(error.response?.data?.error || "Failed to add sub category");
-      } finally {
-        setSubmitting(false);
+  const handleAddSubCategory = async () => {
+  if (!validateForm(newSubCategory)) return;
+  
+  try {
+    setSubmitting(true);
+    const token = localStorage.getItem("authtoken"); 
+    const response = await axios.post(`${API_BASE_URL}/subcategory/post`, newSubCategory, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    };
+    }); // Moved the closing parenthesis to the correct position
+    
+    setSubCategories([...subCategories, response.data]);
+    setSuccessMessage("Sub category added successfully!");
+    fetchData();
+    setTimeout(() => setSuccessMessage(""), 3000);
+    closeModal();
+  } catch (error) {
+    console.error("Error adding sub category:", error);
+    setApiError(error.response?.data?.error || "Failed to add sub category");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
     const handleClose = () => {
       closeModal();
@@ -199,27 +228,27 @@ const SubCategoryMaster = () => {
             <Form>
               <Row>
                 <Col md={12}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Main Category</Form.Label>
-                    <select
-                      className="form-control form-control-lg"
-                      value={newSubCategory.main_category_id}
-                      onChange={(e) =>
-                        setNewSubCategory({ ...newSubCategory, main_category_id: parseInt(e.target.value) })
-                      }
-                      isInvalid={!!errors.main_category_id}
-                    >
-                      <option value="" disabled>Choose...</option>
-                      {mainCategories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.category_name}
-                        </option>
-                      ))}
-                    </select>
-                    <Form.Control.Feedback type="invalid">
-                      {errors.main_category_id}
-                    </Form.Control.Feedback>
-                  </Form.Group>
+                 <Form.Group className="mb-3">
+  <Form.Label>Main Category</Form.Label>
+  <select
+    className="form-control form-control-lg"
+    value={newSubCategory.main_category_id}
+    onChange={(e) =>
+      setNewSubCategory({ ...newSubCategory, main_category_id: parseInt(e.target.value) })
+    }
+    isInvalid={!!errors.main_category_id}
+  >
+    <option value="" disabled>Choose...</option>
+    {mainCategories.map((category) => (
+      <option key={category.id} value={category.id}>
+        {category.category_name} {/* This correctly displays the category name */}
+      </option>
+    ))}
+  </select>
+  <Form.Control.Feedback type="invalid">
+    {errors.main_category_id}
+  </Form.Control.Feedback>
+</Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Sub Category Name</Form.Label>
@@ -328,7 +357,7 @@ const SubCategoryMaster = () => {
       
       try {
         setSubmitting(true);
-        await axios.put(`${API_BASE_URL}/api/subcategory/update/${editSubCategory.id}`, editSubCategory);
+        await axios.put(`${API_BASE_URL}/subcategory/update/${editSubCategory.id}`, editSubCategory);
         
         setSubCategories(subCategories.map(c => 
           c.id === editSubCategory.id ? editSubCategory : c

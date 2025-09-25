@@ -21,13 +21,13 @@ const VariantMaster = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   // API base URL
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
   // Fetch variants from API
   const fetchVariants = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await axios.get(`${API_BASE_URL}/variant/getall`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -100,7 +100,7 @@ const VariantMaster = () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       await axios.delete(`${API_BASE_URL}/variant/delete/${selectedVariant.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -155,7 +155,7 @@ const VariantMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authtoken");
         const response = await axios.post(`${API_BASE_URL}/variant/post`, newVariant, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -326,7 +326,7 @@ const VariantMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authtoken");
         await axios.put(`${API_BASE_URL}/variant/update/${editVariant.id}`, editVariant, {
           headers: {
             Authorization: `Bearer ${token}`

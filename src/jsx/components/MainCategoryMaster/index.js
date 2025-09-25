@@ -21,14 +21,14 @@ const MainCategoryMaster = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   // API base URL
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
   // Fetch categories from API
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE_URL}/main-categories/get`, {
+      const token = localStorage.getItem("authtoken");
+      const response = await axios.get(`${API_BASE_URL}/maincategory/get`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -98,8 +98,8 @@ const MainCategoryMaster = () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${API_BASE_URL}/main-categories/delete/${selectedCategory.id}`, {
+      const token = localStorage.getItem("authtoken");
+      await axios.delete(`${API_BASE_URL}/maincategory/delete/${selectedCategory.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -152,8 +152,8 @@ const MainCategoryMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
-        const response = await axios.post(`${API_BASE_URL}/main-categories/post`, newCategory, {
+        const token = localStorage.getItem("authtoken");
+        const response = await axios.post(`${API_BASE_URL}/maincategory/post`, newCategory, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -307,8 +307,8 @@ const MainCategoryMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
-        await axios.put(`${API_BASE_URL}/main-categories/update/${editCategory.id}`, editCategory, {
+        const token = localStorage.getItem("authtoken");
+        await axios.put(`${API_BASE_URL}/maincategory/update/${editCategory.id}`, editCategory, {
           headers: {
             Authorization: `Bearer ${token}`
           }

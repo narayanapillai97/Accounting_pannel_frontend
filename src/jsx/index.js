@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 
 /// React router dom
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet,Navigate } from "react-router-dom";
 
 /// Css
 import "./index.css";
@@ -13,6 +13,7 @@ import Nav from "./layouts/nav";
 import Footer from "./layouts/Footer";
 import ScrollToTop from "./layouts/ScrollToTop";
 /// Dashboard
+
 import Home from "./components/Dashboard/Home";
 import DashboardDark from "./components/Dashboard/DashboardDark";
 
@@ -170,6 +171,7 @@ const Markup = () => {
     <>
       <Routes>
         {/* Error / Special pages */}
+        
         <Route path="page-lock-screen" element={<LockScreen />} />
         <Route path="page-error-400" element={<Error400 />} />
         <Route path="page-error-403" element={<Error403 />} />
@@ -182,11 +184,12 @@ const Markup = () => {
         <Route path="page-register" element={<Registration />} />
 
         {/* ✅ All other pages use MainLayout */}
-        <Route element={<MainLayout />}>
-          {allroutes.map((data, i) => (
-            <Route key={i} path={`${data.url}`} element={data.component} />
-          ))}
-        </Route>
+  <Route path="/" element={<MainLayout />}>
+  {allroutes.map((data, i) => (
+    <Route key={i} path={data.url} element={data.component} />
+  ))}
+</Route>
+
       </Routes>
 
       <Setting />

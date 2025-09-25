@@ -31,7 +31,7 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import axios from "axios";
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
 const IncomeMaster = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -73,8 +73,8 @@ const IncomeMaster = () => {
   // API Calls for Dropdown Data
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE_URL}/api/maincategory/getall`, {
+      const token = localStorage.getItem("authtoken");
+      const response = await axios.get(`${API_BASE_URL}/maincategory/get`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -89,7 +89,12 @@ const IncomeMaster = () => {
 
   const fetchSubcategories = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/subcategory/getall`);
+      const token = localStorage.getItem("authtoken");
+      const response = await axios.get(`${API_BASE_URL}/subcategory/getall`,{
+          headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setSubcategories(response.data);
       setApiError("");
     } catch (error) {
@@ -100,8 +105,8 @@ const IncomeMaster = () => {
 
   const fetchVariants = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(`${API_BASE_URL}/api/variant/getall`, {
+      const token = localStorage.getItem("authtoken");
+      const response = await axios.get(`${API_BASE_URL}/variant/getall`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -116,8 +121,8 @@ const IncomeMaster = () => {
 
   const fetchPaymentModes = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/paymode/get`, {
+      const token = localStorage.getItem("authtoken");
+      const response = await fetch(`${API_BASE_URL}/paymode/get`, {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -140,8 +145,8 @@ const IncomeMaster = () => {
   const fetchIncomes = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/income/get`, {
+      const token = localStorage.getItem('authtoken');
+      const response = await fetch(`${API_BASE_URL}/income/get`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -167,8 +172,8 @@ const IncomeMaster = () => {
 
   const addIncome = async (incomeData) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/income/post`, {
+      const token = localStorage.getItem('authtoken');
+      const response = await fetch(`${API_BASE_URL}/income/post`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -180,6 +185,9 @@ const IncomeMaster = () => {
       if (!response.ok) {
         throw new Error('Failed to add income');
       }
+
+      fetchIncomes();
+
       
       return await response.json();
     } catch (error) {
@@ -190,8 +198,8 @@ const IncomeMaster = () => {
 
   const updateIncome = async (id, incomeData) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/income/update/${id}`, {
+      const token = localStorage.getItem('authtoken');
+      const response = await fetch(`${API_BASE_URL}/income/update/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -213,8 +221,8 @@ const IncomeMaster = () => {
 
   const deleteIncome = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/income/delete/${id}`, {
+      const token = localStorage.getItem('authtoken');
+      const response = await fetch(`${API_BASE_URL}/income/delete/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -861,68 +869,68 @@ const IncomeMaster = () => {
                     </div>
                   </Form.Group>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>Category</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={localIncome.category_id}
-                      onChange={(e) =>
-                        setLocalIncome({
-                          ...localIncome,
-                          category_id: e.target.value,
-                          subcategory_id: "",
-                          variant_id: "",
-                        })
-                      }
-                      isInvalid={!!localErrors.category_id}
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
-                  </Form.Group>
+           <Form.Group className="mb-3">
+  <Form.Label>Category</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={localIncome.category_id}
+    onChange={(e) =>
+      setLocalIncome({
+        ...localIncome,
+        category_id: e.target.value,
+        subcategory_id: "",
+        variant_id: "",
+      })
+    }
+    isInvalid={!!localErrors.category_id}
+  >
+    <option value="">Select Category</option>
+    {categories.map((c) => (
+      <option key={c.id} value={c.id}>
+        {c.category_name} {/* Changed from c.name to c.category_name */}
+      </option>
+    ))}
+  </Form.Select>
+  <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
+</Form.Group>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>Subcategory</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={localIncome.subcategory_id}
-                      onChange={(e) =>
-                        setLocalIncome({ ...localIncome, subcategory_id: e.target.value, variant_id: "" })
-                      }
-                    >
-                      <option value="">Select Subcategory</option>
-                      {subcategories
-                        .filter((sc) => sc.category_id === parseInt(localIncome.category_id))
-                        .map((sc) => (
-                          <option key={sc.id} value={sc.id}>
-                            {sc.name}
-                          </option>
-                        ))}
-                    </Form.Select>
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Variant</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={localIncome.variant_id}
-                      onChange={(e) => setLocalIncome({ ...localIncome, variant_id: e.target.value })}
-                    >
-                      <option value="">Select Variant</option>
-                      {variants
-                        .filter((v) => v.subcategory_id === parseInt(localIncome.subcategory_id))
-                        .map((v) => (
-                          <option key={v.id} value={v.id}>
-                            {v.name}
-                          </option>
-                        ))}
-                    </Form.Select>
-                  </Form.Group>
+<Form.Group className="mb-3">
+  <Form.Label>Subcategory</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={localIncome.subcategory_id}
+    onChange={(e) =>
+      setLocalIncome({ ...localIncome, subcategory_id: e.target.value, variant_id: "" })
+    }
+  >
+    <option value="">Select Subcategory</option>
+    {subcategories
+      .filter((sc) => sc.main_category_id === parseInt(localIncome.category_id))
+      .map((sc) => (
+        <option key={sc.id} value={sc.id}>
+          {sc.sub_category_name} {/* Changed from sc.name to sc.sub_category_name */}
+        </option>
+      ))}
+  </Form.Select>
+</Form.Group>
+                
+<Form.Group className="mb-3">
+  <Form.Label>Variant</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={localIncome.variant_id}
+    onChange={(e) =>
+      setLocalIncome({ ...localIncome, variant_id: e.target.value })
+    }
+  >
+    <option value="">Select Variant</option>
+    {variants.map((v) => (
+      <option key={v.id} value={v.id}>
+        {v.variant_name} {v.option_values ? `- ${v.option_values}` : ""}
+      </option>
+    ))}
+  </Form.Select>
+</Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Description</Form.Label>
@@ -964,23 +972,24 @@ const IncomeMaster = () => {
                     <Form.Control.Feedback type="invalid">{localErrors.amount}</Form.Control.Feedback>
                   </Form.Group>
 
-                  <Form.Group className="mb-3">
-                    <Form.Label>Payment Mode</Form.Label>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={localIncome.payment_mode_id}
-                      onChange={(e) => setLocalIncome({ ...localIncome, payment_mode_id: e.target.value })}
-                      isInvalid={!!localErrors.payment_mode_id}
-                    >
-                      <option value="">Select Payment Mode</option>
-                      {paymentModes.map((pm) => (
-                        <option key={pm.id} value={pm.id}>
-                          {pm.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                    <Form.Control.Feedback type="invalid">{localErrors.payment_mode_id}</Form.Control.Feedback>
-                  </Form.Group>
+      
+<Form.Group className="mb-3">
+  <Form.Label>Payment Mode</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={localIncome.payment_mode_id}
+    onChange={(e) => setLocalIncome({ ...localIncome, payment_mode_id: e.target.value })}
+    isInvalid={!!localErrors.payment_mode_id}
+  >
+    <option value="">Select Payment Mode</option>
+    {paymentModes.map((pm) => (
+      <option key={pm.id} value={pm.id}>
+        {pm.payment_method} {/* Changed from pm.name to pm.payment_method */}
+      </option>
+    ))}
+  </Form.Select>
+  <Form.Control.Feedback type="invalid">{localErrors.payment_mode_id}</Form.Control.Feedback>
+</Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Bill / Invoice ID</Form.Label>
@@ -1110,59 +1119,60 @@ const IncomeMaster = () => {
                   </Form.Control.Feedback>
                 </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Subcategory</Form.Label>
-                  <Form.Select
-                    className="form-control-lg"
-                    value={selectedIncome?.subcategory_id || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        subcategory_id: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select Subcategory</option>
-                    {subcategories
-                      .filter(
-                        (sc) =>
-                          sc.category_id ===
-                          parseInt(selectedIncome?.category_id || 0)
-                      )
-                      .map((subcategory) => (
-                        <option key={subcategory.id} value={subcategory.id}>
-                          {subcategory.name}
-                        </option>
-                      ))}
-                  </Form.Select>
-                </Form.Group>
+<Form.Group className="mb-3">
+  <Form.Label>Subcategory</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={selectedIncome?.subcategory_id || ""}
+    onChange={(e) =>
+      setSelectedIncome({
+        ...selectedIncome,
+        subcategory_id: e.target.value,
+      })
+    }
+  >
+    <option value="">Select Subcategory</option>
+    {subcategories
+      .filter(
+        (sc) =>
+          sc.main_category_id ===
+          parseInt(selectedIncome?.category_id || 0)
+      )
+      .map((subcategory) => (
+        <option key={subcategory.id} value={subcategory.id}>
+          {subcategory.sub_category_name} {/* Changed from subcategory.name to sub_category_name */}
+        </option>
+      ))}
+  </Form.Select>
+</Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Variant</Form.Label>
-                  <Form.Select
-                    className="form-control-lg"
-                    value={selectedIncome?.variant_id || ""}
-                    onChange={(e) =>
-                      setSelectedIncome({
-                        ...selectedIncome,
-                        variant_id: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select Variant</option>
-                    {variants
-                      .filter(
-                        (v) =>
-                          v.subcategory_id ===
-                          parseInt(selectedIncome?.subcategory_id || 0)
-                      )
-                      .map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.name}
-                        </option>
-                      ))}
-                  </Form.Select>
-                </Form.Group>
+              
+<Form.Group className="mb-3">
+  <Form.Label>Variant</Form.Label>
+  <Form.Select
+    className="form-control-lg"
+    value={selectedIncome?.variant_id || ""}
+    onChange={(e) =>
+      setSelectedIncome({
+        ...selectedIncome,
+        variant_id: e.target.value,
+      })
+    }
+  >
+    <option value="">Select Variant</option>
+    {variants
+      .filter(
+        (v) =>
+          v.subcategory_id ===
+          parseInt(selectedIncome?.subcategory_id || 0)
+      )
+      .map((variant) => (
+        <option key={variant.id} value={variant.id}>
+          {variant.variant_name} {/* Changed from variant.name to variant.variant_name */}
+        </option>
+      ))}
+  </Form.Select>
+</Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Description</Form.Label>
@@ -1233,35 +1243,36 @@ const IncomeMaster = () => {
                   </Form.Control.Feedback>
                 </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Payment Mode</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <CreditCard size={16} />
-                    </span>
-                    <Form.Select
-                      className="form-control-lg"
-                      value={selectedIncome?.payment_mode_id || ""}
-                      onChange={(e) =>
-                        setSelectedIncome({
-                          ...selectedIncome,
-                          payment_mode_id: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.payment_mode_id}
-                    >
-                      <option value="">Select Payment Mode</option>
-                      {paymentModes.map((mode) => (
-                        <option key={mode.id} value={mode.id}>
-                          {mode.name}
-                        </option>
-                      ))}
-                    </Form.Select>
-                  </div>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.payment_mode_id}
-                  </Form.Control.Feedback>
-                </Form.Group>
+
+<Form.Group className="mb-3">
+  <Form.Label>Payment Mode</Form.Label>
+  <div className="input-group">
+    <span className="input-group-text">
+      <CreditCard size={16} />
+    </span>
+    <Form.Select
+      className="form-control-lg"
+      value={selectedIncome?.payment_mode_id || ""}
+      onChange={(e) =>
+        setSelectedIncome({
+          ...selectedIncome,
+          payment_mode_id: e.target.value,
+        })
+      }
+      isInvalid={!!errors.payment_mode_id}
+    >
+      <option value="">Select Payment Mode</option>
+      {paymentModes.map((mode) => (
+        <option key={mode.id} value={mode.id}>
+          {mode.payment_method} {/* Changed from mode.name to mode.payment_method */}
+        </option>
+      ))}
+    </Form.Select>
+  </div>
+  <Form.Control.Feedback type="invalid">
+    {errors.payment_mode_id}
+  </Form.Control.Feedback>
+</Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Bill/Invoice ID</Form.Label>

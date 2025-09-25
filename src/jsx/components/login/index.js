@@ -1,26 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { connect, useDispatch } from "react-redux";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loadingToggleAction, loginAction, debugTokenAction } from "../../store/actions/AuthActions";
-import { Eye, EyeOff, Mail, Lock, ChevronRight, Bug } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ChevronRight } from "lucide-react";
 import suyaplogo from "../../../src/images/logo/suyap_logo.jpeg";
 import accountingImage from "../../../src/images/gallery/accounting_image.jpg";
+import axios from "axios";
+import { toast } from "react-toastify";
 
-function AccountingLogin(props) {
+function AccountingLogin() {
   const [email, setEmail] = useState("demo@example.com");
   const [password, setPassword] = useState("123456");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
-  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Debug token on component mount
-  useEffect(() => {
-    console.log('🔍 AccountingLogin mounted');
-    dispatch(debugTokenAction());
-  }, [dispatch]);
-
-  const onLogin = (e) => {
+  const onLogin = async (e) => {
     e.preventDefault();
     let error = {};
     if (!email) error.email = "Email is required";
@@ -29,12 +23,42 @@ function AccountingLogin(props) {
 
     if (Object.keys(error).length > 0) return;
 
-    console.log('🔐 Attempting login with:', { email, password });
-    dispatch(loginAction(email, password, navigate));
-  };
+    try {
+      setLoading(true);
 
-  const onDebugToken = () => {
-    dispatch(debugTokenAction());
+      // Call backend API
+      const res = await axios.post("http://localhost:5008/authRoutes/login", {
+        email,
+        password,
+      });
+
+      const { token, user } = res.data;
+     
+
+      // Store in localStorage
+      localStorage.setItem("authtoken", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      toast.success("Login successful ✅");
+    console.log(("Login successful ✅",localStorage.getItem("authtoken"),token));
+     console.log("Full response:", res);
+     console.log("Response data only:", res.data);
+     console.log("Token:", res.data.token);
+     console.log("User:", res.data.user);
+
+
+      // Redirect to dashboard
+      navigate("dashboard");
+    } catch (err) {
+      console.error("❌ Login failed:", err);
+      let message = "Login failed. Try again.";
+      if (err.response?.data?.message) {
+        message = err.response.data.message;
+      }
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,7 +108,6 @@ function AccountingLogin(props) {
           justify-content: center;
           padding: 2rem;
           background: #fff;
-          position: relative;
         }
         .login-card {
           background: white;
@@ -94,7 +117,6 @@ function AccountingLogin(props) {
           max-width: 450px;
           box-shadow: 0 10px 30px rgba(0,0,0,0.08);
           position: relative;
-          z-index: 10;
         }
         .logo-container {
           display: flex;
@@ -244,25 +266,6 @@ function AccountingLogin(props) {
           bottom: -80px;
           left: -80px;
         }
-        .debug-btn {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: #6c757d;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          padding: 8px 12px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 0.8rem;
-          z-index: 100;
-        }
-        .debug-btn:hover {
-          background: #5a6268;
-        }
         @media (max-width: 900px) {
           .login-container {
             flex-direction: column;
@@ -274,16 +277,13 @@ function AccountingLogin(props) {
       `}</style>
 
       <div className="login-container">
-        {/* Debug Button */}
-        <button className="debug-btn" onClick={onDebugToken}>
-          <Bug size={14} /> Debug Token
-        </button>
-
         {/* Left Branding Section */}
         <div className="left-panel">
           <div className="brand-content">
             <h1>Smart Accounting Portal</h1>
-            <p>Streamline your financial operations with our comprehensive accounting solution. Manage invoices, track expenses, and generate reports all in one place.</p>
+            <p>
+              Streamline your financial operations with our comprehensive accounting solution. Manage invoices, track expenses, and generate reports all in one place.
+            </p>
           </div>
         </div>
 
@@ -291,7 +291,7 @@ function AccountingLogin(props) {
         <div className="right-panel">
           <div className="decoration-circle circle-1"></div>
           <div className="decoration-circle circle-2"></div>
-          
+
           <form className="login-card" onSubmit={onLogin}>
             <div className="logo-container">
               <img src={suyaplogo} alt="Suyap Logo" className="logo" />
@@ -337,9 +337,9 @@ function AccountingLogin(props) {
               <Link to="/forgot-password">Forgot password?</Link>
             </div>
 
-            <button type="submit" className="submit-btn" disabled={props.showLoading}>
-              {props.showLoading ? "Signing in..." : "Sign In"} 
-              {!props.showLoading && <ChevronRight size={20} />}
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
+              {!loading && <ChevronRight size={20} />}
             </button>
 
             <p className="signup-text">
@@ -352,10 +352,4 @@ function AccountingLogin(props) {
   );
 }
 
-const mapStateToProps = (state) => ({
-  errorMessage: state.auth.errorMessage,
-  successMessage: state.auth.successMessage,
-  showLoading: state.auth.showLoading,
-});
-
-export default connect(mapStateToProps)(AccountingLogin);
+export default AccountingLogin;

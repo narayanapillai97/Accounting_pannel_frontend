@@ -35,7 +35,7 @@ const PayModeMaster = () => {
   const fetchPayModes = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}paymode/get`, {
         headers: {
           "Authorization": `Bearer ${token}`
