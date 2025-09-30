@@ -49,7 +49,7 @@ const EmployeeMaster = () => {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await axios.get(`${API_BASE_URL}/employee/get`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -151,7 +151,7 @@ const EmployeeMaster = () => {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       await axios.delete(`${API_BASE_URL}/employee/delete/${selectedEmployee.id}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -174,7 +174,7 @@ const EmployeeMaster = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await axios.post(`${API_BASE_URL}/employee/post`, newEmployee, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -198,7 +198,7 @@ const EmployeeMaster = () => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       await axios.put(`${API_BASE_URL}/employee/update/${selectedEmployee.id}`, selectedEmployee, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -276,7 +276,7 @@ const AddModal = ({ showAddModal, closeModal }) => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await axios.post(`${API_BASE_URL}/employeemaster/post`, newEmployee, {
         headers: { Authorization: token },
       });
@@ -498,7 +498,7 @@ const EditModal = ({
     try {
       setSubmitting(true);
       setApiError("");
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       await axios.put(
         `${API_BASE_URL}/employeemaster/update/${editEmployee.employee_id}`,
         editEmployee,

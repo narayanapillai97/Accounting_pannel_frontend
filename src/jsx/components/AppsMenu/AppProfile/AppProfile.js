@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Edit3, 
   Save, 
@@ -12,14 +12,18 @@ import {
   Sun,
   Moon,
   MapPin,
-  Shield
+  Shield,
+  AlertCircle
 } from "lucide-react";
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008/";
 
 const Profile = () => {
   const [userData, setUserData] = useState({
-    name: "Mitchell C. Shay",
+    id: "",
+    full_name: "Mitchell C. Shay",
     email: "hello@mitchellshay.com",
-    phone: "+1 (123) 456-7890",
+    mobile_number: "+1 (123) 456-7890",
     altPhone: "+1 (987) 654-3210",
     dob: "1990-05-15",
     bloodGroup: "O+",
@@ -29,19 +33,151 @@ const Profile = () => {
   const [editMode, setEditMode] = useState(false);
   const [tempData, setTempData] = useState({ ...userData });
   const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+
+  // Get current user ID from token or context (you might need to adjust this)
+  const getCurrentUserId = () => {
+    // This should be replaced with your actual user ID retrieval logic
+    // For example, from localStorage, context, or Redux store
+    const token = localStorage.getItem('authtoken');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.id;
+      } catch (error) {
+        console.error('Error parsing token:', error);
+        return null;
+      }
+    }
+    return null;
+  };
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        setMessage({ type: 'error', text: 'User not authenticated' });
+        return;
+      }
+
+      const token = localStorage.getItem('authtoken');
+      const response = await fetch(`${API_BASE_URL}/authRoutes/getby/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data) {
+          const user = result.data;
+          setUserData(prev => ({
+            ...prev,
+            id: user.id,
+            full_name: user.full_name || prev.full_name,
+            email: user.email || prev.email,
+            mobile_number: user.mobile_number || prev.mobile_number
+          }));
+          setTempData(prev => ({
+            ...prev,
+            id: user.id,
+            full_name: user.full_name || prev.full_name,
+            email: user.email || prev.email,
+            mobile_number: user.mobile_number || prev.mobile_number
+          }));
+        }
+      } else {
+        throw new Error('Failed to fetch user data');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setMessage({ type: 'error', text: 'Failed to load user data' });
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTempData(prev => ({ ...prev, [name]: value }));
   };
 
-  const toggleEditMode = () => {
+  const updateProfile = async (userData) => {
+    try {
+      setLoading(true);
+      setMessage({ type: '', text: '' });
+
+      const userId = getCurrentUserId();
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const token = localStorage.getItem('authtoken');
+      const updateData = {
+        full_name: userData.full_name,
+        email: userData.email,
+        mobile_number: userData.mobile_number
+        // Add other fields as needed based on your API
+      };
+
+      const response = await fetch(`${API_BASE_URL}authRoutes/update/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+
+      const result = await response.json();
+      setMessage({ type: 'success', text: 'Profile updated successfully!' });
+      return result.data;
+
+    } catch (error) {
+      console.error('Update error:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to update profile' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleEditMode = async () => {
     if (editMode) {
-      setUserData({ ...tempData });
+      try {
+        const updatedUser = await updateProfile(tempData);
+        setUserData({ ...tempData });
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setMessage({ type: '', text: '' });
+        }, 3000);
+        
+      } catch (error) {
+        // Error is already handled in updateProfile
+        return; // Don't exit edit mode if update failed
+      }
     } else {
       setTempData({ ...userData });
     }
     setEditMode(!editMode);
+  };
+
+  const cancelEdit = () => {
+    setTempData({ ...userData });
+    setEditMode(false);
+    setMessage({ type: '', text: '' });
   };
 
   const toggleTheme = () => {
@@ -50,7 +186,7 @@ const Profile = () => {
 
   const contactItems = [
     { icon: Mail, label: "Email", name: "email", type: "email" },
-    { icon: Phone, label: "Phone", name: "phone", type: "tel" },
+    { icon: Phone, label: "Phone", name: "mobile_number", type: "tel" },
     { icon: Phone, label: "Alternative Phone", name: "altPhone", type: "tel" },
     { icon: Calendar, label: "Date of Birth", name: "dob", type: "date" },
     { icon: Droplets, label: "Blood Group", name: "bloodGroup", type: "text" },
@@ -73,7 +209,9 @@ const Profile = () => {
       footerBorder: '#e9ecef',
       headerBg: 'linear-gradient(135deg, #cb2d3e, #ef473a)',
       iconBg: 'linear-gradient(135deg, #cb2d3e, #ef473a)',
-      accentColor: '#cb2d3e'
+      accentColor: '#cb2d3e',
+      success: '#10b981',
+      error: '#ef4444'
     },
     dark: {
       background: '#0f1419',
@@ -89,7 +227,9 @@ const Profile = () => {
       footerBorder: '#4a5568',
       headerBg: 'linear-gradient(135deg, #8a1c26, #c0392b)',
       iconBg: 'linear-gradient(135deg, #cb2d3e, #ef473a)',
-      accentColor: '#ef473a'
+      accentColor: '#ef473a',
+      success: '#10b981',
+      error: '#ef4444'
     }
   };
 
@@ -153,6 +293,7 @@ const Profile = () => {
           {/* Edit Button */}
           <button 
             onClick={toggleEditMode}
+            disabled={loading}
             style={{
               position: 'absolute',
               top: '1.5rem',
@@ -160,19 +301,33 @@ const Profile = () => {
               padding: '0.5rem 1rem',
               borderRadius: '20px',
               border: 'none',
-              backgroundColor: editMode ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: editMode ? currentTheme.success : 'rgba(255, 255, 255, 0.9)',
               color: editMode ? 'white' : '#cb2d3e',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
               boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              opacity: loading ? 0.7 : 1
             }}
           >
-            {editMode ? <Save size={16} /> : <Edit3 size={16} />}
-            {editMode ? 'Save' : 'Edit'}
+            {loading ? (
+              <div style={{ 
+                width: '16px', 
+                height: '16px', 
+                border: '2px solid transparent',
+                borderTop: '2px solid currentColor',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+            ) : editMode ? (
+              <Save size={16} />
+            ) : (
+              <Edit3 size={16} />
+            )}
+            {editMode ? (loading ? 'Saving...' : 'Save') : 'Edit'}
           </button>
           
           <div style={{
@@ -198,14 +353,14 @@ const Profile = () => {
               marginBottom: '1.5rem',
               border: '3px solid rgba(255, 255, 255, 0.3)'
             }}>
-              {userData.name.split(' ').map(n => n[0]).join('')}
+              {userData.full_name.split(' ').map(n => n[0]).join('')}
             </div>
             
             <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
               {editMode ? (
                 <input
-                  name="name"
-                  value={tempData.name}
+                  name="full_name"
+                  value={tempData.full_name}
                   onChange={handleChange}
                   style={{ 
                     width: '100%',
@@ -230,7 +385,7 @@ const Profile = () => {
                   fontWeight: 'bold',
                   margin: '0 0 0.5rem 0',
                   color: 'white'
-                }}>{userData.name}</h1>
+                }}>{userData.full_name}</h1>
               )}
             </div>
             
@@ -250,6 +405,22 @@ const Profile = () => {
             </div>
           </div>
         </div>
+
+        {/* Message Alert */}
+        {message.text && (
+          <div style={{
+            padding: '1rem 2.5rem',
+            backgroundColor: message.type === 'error' ? currentTheme.error : currentTheme.success,
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.9rem'
+          }}>
+            <AlertCircle size={16} />
+            {message.text}
+          </div>
+        )}
 
         {/* Content */}
         <div style={{ padding: '2.5rem' }}>
@@ -353,22 +524,21 @@ const Profile = () => {
             transition: 'all 0.3s ease'
           }}>
             <button
-              onClick={() => {
-                setEditMode(false);
-                setTempData({ ...userData });
-              }}
+              onClick={cancelEdit}
+              disabled={loading}
               style={{
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 border: `1px solid ${currentTheme.inputBorder}`,
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 transition: 'all 0.2s',
                 backgroundColor: currentTheme.inputBg,
-                color: currentTheme.textSecondary
+                color: currentTheme.textSecondary,
+                opacity: loading ? 0.7 : 1
               }}
             >
               <X size={16} />
@@ -376,26 +546,46 @@ const Profile = () => {
             </button>
             <button
               onClick={toggleEditMode}
+              disabled={loading}
               style={{
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 border: 'none',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 transition: 'all 0.2s',
                 background: 'linear-gradient(135deg, #cb2d3e, #ef473a)',
-                color: 'white'
+                color: 'white',
+                opacity: loading ? 0.7 : 1
               }}
             >
-              <Check size={16} />
-              Save Changes
+              {loading ? (
+                <div style={{ 
+                  width: '16px', 
+                  height: '16px', 
+                  border: '2px solid transparent',
+                  borderTop: '2px solid currentColor',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              ) : (
+                <Check size={16} />
+              )}
+              {loading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

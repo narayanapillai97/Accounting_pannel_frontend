@@ -158,7 +158,9 @@ const IncomeMaster = () => {
       }
       
       const data = await response.json();
-      setIncomes(data.map((item) => ({
+      // Ensure we're accessing the correct property and handle files properly
+      const incomeData = data.data || data || [];
+      setIncomes(incomeData.map((item) => ({
         ...item,
         files: item.files || []
       })));
@@ -278,15 +280,16 @@ const IncomeMaster = () => {
   }, [incomes]);
 
   const getCategoryName = (id) => {
-    const category = categories.find((c) => c.id === id);
-    return category ? category.name : "N/A";
+    if (!id) return "N/A";
+    const category = categories.find((c) => c.id === id || c.category_id === id);
+    return category ? (category.category_name || category.name || "N/A") : "N/A";
   };
 
   const getPaymentModeName = (id) => {
-    const mode = paymentModes.find((p) => p.id === id);
-    return mode ? mode.name : "N/A";
+    if (!id) return "N/A";
+    const mode = paymentModes.find((p) => p.id === id || p.payment_mode_id === id);
+    return mode ? (mode.payment_method || mode.name || "N/A") : "N/A";
   };
-
   // Filter income records based on search term
   const filteredIncomes = useMemo(() => {
     if (!searchTerm) return incomes;
@@ -301,7 +304,7 @@ const IncomeMaster = () => {
       income.date?.includes(lowerSearchTerm) ||
       income.bill_id?.toLowerCase().includes(lowerSearchTerm)
     );
-  }, [incomes, searchTerm, getCategoryName, getPaymentModeName]);
+  }, [incomes, searchTerm]);
 
   const validateForm = (incomeData) => {
     const newErrors = {};

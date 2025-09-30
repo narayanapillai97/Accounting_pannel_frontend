@@ -29,7 +29,12 @@ const BankDetails = () => {
   const fetchBankDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}bankdetails/get`);
+       const token = localStorage.getItem("authtoken");
+      const response = await axios.get(`${API_BASE_URL}bankdetails/get`,{
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       setBankDetails(response.data);
       setErrorMessage("");
     } catch (error) {

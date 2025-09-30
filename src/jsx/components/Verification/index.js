@@ -51,7 +51,12 @@ const Verification = () => {
   const fetchVerifications = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE_URL}verification/get`);
+      const token = localStorage.getItem("authtoken");
+      const response = await fetch(`${API_BASE_URL}verification/get`,{
+               headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -145,6 +150,7 @@ const Verification = () => {
 
   const handleDelete = async () => {
     try {
+      const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}verification/delete/${selectedVerification.id}`, {
         method: 'DELETE',
       });
@@ -171,6 +177,7 @@ const Verification = () => {
     if (!validateForm(newVerification)) return;
 
     try {
+       const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}verification/post`, {
         method: 'POST',
         headers: {
@@ -202,6 +209,7 @@ const Verification = () => {
     if (!validateForm(selectedVerification)) return;
 
     try {
+       const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}verification/update/${selectedVerification.id}`, {
         method: 'PUT',
         headers: {
@@ -274,7 +282,7 @@ const AddModal = ({ showAddModal, closeModal }) => {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+       const token = localStorage.getItem("authtoken");
       const response = await axios.post(`${API_BASE_URL}/verification/post`, newVerification, {
         headers: { Authorization: token },
       });
@@ -526,7 +534,7 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+       const token = localStorage.getItem("authtoken");
       await axios.put(
         `${API_BASE_URL}/verification/update/${editVerification.verification_id}`,
         editVerification,
