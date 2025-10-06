@@ -7,22 +7,22 @@ import {
   Table,
   Form,
   Badge,
-  Alert
+  Alert,
+  Spinner
 } from "react-bootstrap";
 import { 
   FileText,
   Download,
-  Printer
+  Printer,
+  RefreshCw
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import PageTitle from "../../layouts/PageTitle";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import DateRangePicker from "react-bootstrap-daterangepicker";
 
-// Import the JSON data
-import incomeData from "../../../../src/jsx/components/reportdata/reportdata.json";
+const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
 
 const IncomeReport = () => {
   const [incomes, setIncomes] = useState([]);
@@ -32,6 +32,7 @@ const IncomeReport = () => {
   const [variants, setVariants] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     startDate: null,
@@ -41,20 +42,87 @@ const IncomeReport = () => {
     status: ''
   });
 
-  // Load data from JSON file
-  useEffect(() => {
+  // Format date to YYYY-MM-DD for API
+  const formatDate = (date) => {
+    if (!date) return null;
+    return date.toISOString().split('T')[0];
+  };
+
+  // Fetch data from API
+  const fetchIncomeReport = async (fromDate, toDate) => {
+    setIsFetching(true);
+    setError(null);
+    
     try {
-      setIncomes(incomeData.incomes);
-      setFilteredIncomes(incomeData.incomes);
-      setCategories(incomeData.categories);
-      setSubcategories(incomeData.subcategories);
-      setVariants(incomeData.variants);
-      setPaymentModes(incomeData.paymentModes);
-      setIsLoading(false);
+      const fromDateStr = formatDate(fromDate) || formatDate(new Date());
+      const toDateStr = formatDate(toDate) || formatDate(new Date());
+      
+      const response = await fetch(
+        `${API_BASE_URL}/income/report/${fromDateStr}/${toDateStr}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authtoken')}`, // Adjust based on your auth
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setIncomes(data.report.data);
+        setFilteredIncomes(data.report.data);
+        
+        // Extract unique categories, payment modes, etc. from the data
+        const uniqueCategories = [...new Map(data.report.data.map(item => 
+          [item.category_id, { id: item.category_id, name: item.category_name }]
+        )).values()];
+        
+        const uniqueSubcategories = [...new Map(data.report.data.map(item => 
+          [item.subcategory_id, { id: item.subcategory_id, name: item.sub_category_name }]
+        )).values()];
+        
+        const uniqueVariants = [...new Map(data.report.data.map(item => 
+          [item.variant_id, { id: item.variant_id, name: item.variant_name }]
+        )).values()];
+        
+        const uniquePaymentModes = [...new Map(data.report.data.map(item => 
+          [item.payment_mode_id, { id: item.payment_mode_id, name: item.payment_method }]
+        )).values()];
+
+        setCategories(uniqueCategories);
+        setSubcategories(uniqueSubcategories);
+        setVariants(uniqueVariants);
+        setPaymentModes(uniquePaymentModes);
+      } else {
+        throw new Error(data.error || 'Failed to fetch income report');
+      }
     } catch (err) {
+      console.error('Error fetching income report:', err);
       setError(err.message);
+    } finally {
       setIsLoading(false);
+      setIsFetching(false);
     }
+  };
+
+  // Load initial data
+  useEffect(() => {
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+    
+    setFilters(prev => ({
+      ...prev,
+      startDate: oneMonthAgo,
+      endDate: today
+    }));
+    
+    fetchIncomeReport(oneMonthAgo, today);
   }, []);
 
   // Apply filters
@@ -110,6 +178,12 @@ const IncomeReport = () => {
     ) : (
       <Badge bg="danger">Inactive</Badge>
     );
+  };
+
+  const handleRefresh = () => {
+    if (filters.startDate && filters.endDate) {
+      fetchIncomeReport(filters.startDate, filters.endDate);
+    }
   };
 
   const downloadPdfReport = () => {
@@ -246,12 +320,27 @@ const IncomeReport = () => {
     }));
   };
 
-  if (isLoading) {
-    return <div className="text-center py-5">Loading...</div>;
-  }
+  const handleDateChange = (dates) => {
+    const [start, end] = dates;
+    setFilters(prev => ({
+      ...prev,
+      startDate: start,
+      endDate: end,
+    }));
 
-  if (error) {
-    return <Alert variant="danger" className="m-3">{error}</Alert>;
+    // Fetch new data when date range changes
+    if (start && end) {
+      fetchIncomeReport(start, end);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" role="status" className="me-2" />
+        Loading income report...
+      </div>
+    );
   }
 
   return (
@@ -264,11 +353,20 @@ const IncomeReport = () => {
             <Card.Header className="d-flex justify-content-between align-items-center">
               <Card.Title>Income Report</Card.Title>
               <div>
+                <Button 
+                  variant="outline-primary" 
+                  className="me-2" 
+                  onClick={handleRefresh}
+                  disabled={isFetching}
+                >
+                  <RefreshCw size={16} className={isFetching ? "spinning" : ""} />
+                  {isFetching ? ' Refreshing...' : ' Refresh'}
+                </Button>
                 <Button variant="primary" className="me-2" onClick={exportToExcel}>
                   <Download size={16} className="me-1" />
                   Export to Excel
                 </Button>
-                <Button variant="danger" className="me-2" onClick={downloadPdfReport}>
+                <Button variant="danger" onClick={downloadPdfReport}>
                   <Download size={16} className="me-1" />
                   Download PDF
                 </Button>
@@ -276,21 +374,21 @@ const IncomeReport = () => {
             </Card.Header>
 
             <Card.Body id="income-report-content">
+              {error && (
+                <Alert variant="danger" className="mb-3">
+                  {error}
+                </Alert>
+              )}
+
               <Row className="mb-4">
-                  <Col md={6}>
+                <Col md={6}>
                   <Form.Group>
                     <Form.Label>Date Range</Form.Label>
                     <DatePicker
                       selectsRange={true}
                       startDate={filters.startDate}
                       endDate={filters.endDate}
-                      onChange={(update) => {
-                        setFilters({
-                          ...filters,
-                          startDate: update[0],
-                          endDate: update[1],
-                        });
-                      }}
+                      onChange={handleDateChange}
                       isClearable={true}
                       className="form-control"
                       placeholderText="Select start and end date"
@@ -351,7 +449,7 @@ const IncomeReport = () => {
               <Row>
                 <Col md={12}>
                   <Card>
-                    <Card.Header>
+                    <Card.Header className="d-flex justify-content-between align-items-center">
                       <Card.Title>Income Details</Card.Title>
                       <div className="text-end">
                         <strong>Total: ₹{filteredIncomes.reduce((sum, income) => sum + parseFloat(income.amount), 0).toFixed(2)}</strong>
@@ -378,7 +476,7 @@ const IncomeReport = () => {
                           <tbody>
                             {filteredIncomes.length > 0 ? (
                               filteredIncomes.map((income, index) => (
-                                <tr key={income.id}>
+                                <tr key={income.id || index}>
                                   <td>{index + 1}</td>
                                   <td>{income.date}</td>
                                   <td>{income.payer_name}</td>
@@ -387,7 +485,7 @@ const IncomeReport = () => {
                                   <td>{income.description}</td>
                                   <td className="text-end">{parseFloat(income.amount).toFixed(2)}</td>
                                   <td>{getPaymentModeName(income.payment_mode_id)}</td>
-                                  <td>{income.bill_id}</td>
+                                  <td>{income.bill_code || income.bill_id || 'N/A'}</td>
                                   <td>{getStatusBadge(income.status)}</td>
                                   <td>
                                     <Button
@@ -403,7 +501,7 @@ const IncomeReport = () => {
                                         doc.setFontSize(12);
                                         doc.text(`Payer: ${income.payer_name}`, 14, 25);
                                         doc.text(`Date: ${income.date}`, 14, 32);
-                                        doc.text(`Receipt #: ${income.bill_id || "N/A"}`, 14, 39);
+                                        doc.text(`Receipt #: ${income.bill_code || income.bill_id || "N/A"}`, 14, 39);
                                         
                                         doc.autoTable({
                                           startY: 50,
@@ -421,7 +519,7 @@ const IncomeReport = () => {
                                         doc.text(`Payment Method: ${getPaymentModeName(income.payment_mode_id)}`, 14, finalY);
                                         doc.text("Thank you!", 105, finalY + 10, { align: "center" });
                                         
-                                        doc.save(`Income_Receipt_${income.bill_id || income.id}.pdf`);
+                                        doc.save(`Income_Receipt_${income.bill_code || income.bill_id || income.id}.pdf`);
                                       }}
                                     >
                                       <FileText size={14} />
@@ -432,7 +530,7 @@ const IncomeReport = () => {
                             ) : (
                               <tr>
                                 <td colSpan="11" className="text-center">
-                                  No incomes found matching your filters
+                                  {isFetching ? 'Loading data...' : 'No incomes found matching your filters'}
                                 </td>
                               </tr>
                             )}
@@ -447,6 +545,17 @@ const IncomeReport = () => {
           </Card>
         </Col>
       </Row>
+
+      <style jsx>{`
+        .spinning {
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </Fragment>
   );
 };
