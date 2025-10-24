@@ -277,7 +277,7 @@ const AddModal = ({ showAddModal, closeModal }) => {
     try {
       setSubmitting(true);
       const token = localStorage.getItem("authtoken");
-      const response = await axios.post(`${API_BASE_URL}/employeemaster/post`, newEmployee, {
+      const response = await axios.post(`${API_BASE_URL}/employee/post`, newEmployee, {
         headers: { Authorization: token },
       });
 

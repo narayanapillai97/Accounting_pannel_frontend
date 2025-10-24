@@ -142,84 +142,131 @@ const IncomeMaster = () => {
   };
 
   // API Calls for Income Data
-  const fetchIncomes = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('authtoken');
-      const response = await fetch(`${API_BASE_URL}/income/get`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch incomes');
+ const fetchIncomes = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('authtoken');
+    const response = await fetch(`${API_BASE_URL}/income/get`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
-      
-      const data = await response.json();
-      // Ensure we're accessing the correct property and handle files properly
-      const incomeData = data.data || data || [];
-      setIncomes(incomeData.map((item) => ({
-        ...item,
-        files: item.files || []
-      })));
-    } catch (error) {
-      console.error('Error fetching incomes:', error);
-      setApiError('Failed to load income records');
-    } finally {
-      setLoading(false);
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch incomes');
     }
-  };
-
-  const addIncome = async (incomeData) => {
-    try {
-      const token = localStorage.getItem('authtoken');
-      const response = await fetch(`${API_BASE_URL}/income/post`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(incomeData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to add income');
-      }
-
-      fetchIncomes();
-
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error adding income:', error);
-      throw error;
+    
+    const data = await response.json();
+    const incomeData = Array.isArray(data) ? data : (data.data || []);
+    
+    setIncomes(incomeData.map((item) => ({
+      ...item,
+      // Keep files array for compatibility, but use image_url from backend
+      files: item.image_url ? [{
+        name: 'receipt_image.jpg',
+        type: 'image/jpeg',
+        url: item.image_url,
+        isBackendImage: true
+      }] : []
+    })));
+    setApiError("");
+  } catch (error) {
+    console.error('Error fetching incomes:', error);
+    setApiError('Failed to load income records');
+  } finally {
+    setLoading(false);
+  }
+};
+// Add income with file upload
+const addIncome = async (incomeData) => {
+  try {
+    const token = localStorage.getItem('authtoken');
+    const formData = new FormData();
+    
+    // Append all fields to FormData
+    formData.append('date', incomeData.date);
+    formData.append('category_id', incomeData.category_id);
+    formData.append('subcategory_id', incomeData.subcategory_id || '');
+    formData.append('variant_id', incomeData.variant_id || '');
+    formData.append('payer_name', incomeData.payer_name);
+    formData.append('description', incomeData.description || '');
+    formData.append('amount', incomeData.amount);
+    formData.append('payment_mode_id', incomeData.payment_mode_id);
+    formData.append('bill_id', incomeData.bill_id || '');
+    formData.append('status', incomeData.status);
+    
+    // Append image file if exists
+    if (incomeData.image) {
+      formData.append('image', incomeData.image);
     }
-  };
 
-  const updateIncome = async (id, incomeData) => {
-    try {
-      const token = localStorage.getItem('authtoken');
-      const response = await fetch(`${API_BASE_URL}/income/update/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(incomeData)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update income');
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating income:', error);
-      throw error;
+    const response = await fetch(`${API_BASE_URL}/income/post`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type - let browser set it with boundary
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to add income');
     }
-  };
+
+    await fetchIncomes(); // Refresh the list
+    return await response.json();
+  } catch (error) {
+    console.error('Error adding income:', error);
+    throw error;
+  }
+};
+
+// Update income with file upload
+const updateIncome = async (id, incomeData) => {
+  try {
+    const token = localStorage.getItem('authtoken');
+    const formData = new FormData();
+    
+    // Append all fields to FormData
+    formData.append('date', incomeData.date);
+    formData.append('category_id', incomeData.category_id);
+    formData.append('subcategory_id', incomeData.subcategory_id || '');
+    formData.append('variant_id', incomeData.variant_id || '');
+    formData.append('payer_name', incomeData.payer_name);
+    formData.append('description', incomeData.description || '');
+    formData.append('amount', incomeData.amount);
+    formData.append('payment_mode_id', incomeData.payment_mode_id);
+    formData.append('bill_id', incomeData.bill_id || '');
+    formData.append('status', incomeData.status);
+    
+    // Append image file if exists
+    if (incomeData.image && incomeData.image instanceof File) {
+      formData.append('image', incomeData.image);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/income/update/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update income');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating income:', error);
+    throw error;
+  }
+};
+
+
 
   const deleteIncome = async (id) => {
     try {
@@ -291,20 +338,20 @@ const IncomeMaster = () => {
     return mode ? (mode.payment_method || mode.name || "N/A") : "N/A";
   };
   // Filter income records based on search term
-  const filteredIncomes = useMemo(() => {
-    if (!searchTerm) return incomes;
-    
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return incomes.filter(income => 
-      income.payer_name?.toLowerCase().includes(lowerSearchTerm) ||
-      income.description?.toLowerCase().includes(lowerSearchTerm) ||
-      getCategoryName(income.category_id)?.toLowerCase().includes(lowerSearchTerm) ||
-      getPaymentModeName(income.payment_mode_id)?.toLowerCase().includes(lowerSearchTerm) ||
-      income.amount?.toString().includes(lowerSearchTerm) ||
-      income.date?.includes(lowerSearchTerm) ||
-      income.bill_id?.toLowerCase().includes(lowerSearchTerm)
-    );
-  }, [incomes, searchTerm]);
+const filteredIncomes = useMemo(() => {
+  if (!searchTerm) return incomes;
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return incomes.filter(income => 
+    income.payer_name?.toLowerCase().includes(lowerSearchTerm) ||
+    income.description?.toLowerCase().includes(lowerSearchTerm) ||
+    getCategoryName(income.category_id)?.toLowerCase().includes(lowerSearchTerm) ||
+    getPaymentModeName(income.payment_mode_id)?.toLowerCase().includes(lowerSearchTerm) ||
+    income.amount?.toString().includes(lowerSearchTerm) ||
+    income.date?.includes(lowerSearchTerm) ||
+    (income.bill_id && income.bill_id.toString().toLowerCase().includes(lowerSearchTerm)) // Fixed line
+  );
+}, [incomes, searchTerm]);
 
   const validateForm = (incomeData) => {
     const newErrors = {};
@@ -321,6 +368,18 @@ const IncomeMaster = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+const openImagePreview = (income) => {
+  if (income.image_url) {
+    setSelectedFile({
+      name: 'receipt_image.jpg',
+      url: income.image_url,
+      type: 'image/jpeg', // Add this
+      isImage: true
+    });
+    setShowFileModal(true);
+  }
+};
 
   const openAddModal = () => {
     setNewIncome({
@@ -457,7 +516,18 @@ const IncomeMaster = () => {
     setSelectedFile(null);
   };
 
-  const downloadFile = (file) => {
+ const downloadFile = (file) => {
+  if (file.url) {
+    // For URL-based files (from backend)
+    const a = document.createElement('a');
+    a.href = file.url;
+    a.download = file.name || 'download';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } else {
+    // For File objects (from upload)
     const url = URL.createObjectURL(file);
     const a = document.createElement('a');
     a.href = url;
@@ -466,8 +536,8 @@ const IncomeMaster = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
-
+  }
+};
   const downloadPdf = () => {
     if (!billData) return;
 
@@ -715,350 +785,442 @@ const IncomeMaster = () => {
   );
 
   // File Preview Modal Component
-  const FileModalComponent = () => {
-    if (!selectedFile) return null;
+// File Preview Modal Component
+const FileModalComponent = () => {
+  if (!selectedFile) return null;
 
-    const isImage = selectedFile.type.startsWith('image/');
-    const isPDF = selectedFile.type === 'application/pdf';
+  // Check if it's an image - either by type or by isImage flag or by URL
+  const isImage = selectedFile.type?.startsWith('image/') || 
+                  selectedFile.isImage || 
+                  (selectedFile.url && /\.(jpg|jpeg|png|gif|webp)$/i.test(selectedFile.url));
+  
+  const isPDF = selectedFile.type === 'application/pdf' || 
+                (selectedFile.url && selectedFile.url.toLowerCase().includes('.pdf'));
 
-    return (
-      <div className={`thaniya-normal-overlay ${showFileModal ? "thaniya-overlay-visible" : ""}`}>
-        <div className="thaniya-normal-backdrop" onClick={closeFileModal}></div>
-        <div
-          className={`thaniya-normal-modal ${showFileModal ? "thaniya-normal-modal-visible" : ""}`}
-          style={{ maxWidth: "800px", width: "90%" }}
-        >
-          <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">File Preview</h2>
-            <button onClick={closeFileModal} className="thaniya-normal-close">
-              <X size={20} />
-            </button>
-          </div>
-          <div className="thaniya-normal-body">
-            <div className="text-center">
-              <h5>{selectedFile.name}</h5>
-              
-              {isImage ? (
-                <img 
-                  src={URL.createObjectURL(selectedFile)} 
-                  alt="Preview" 
-                  style={{ maxWidth: '100%', maxHeight: '500px' }}
-                />
-              ) : isPDF ? (
-                <iframe 
-                  src={URL.createObjectURL(selectedFile)} 
-                  width="100%" 
-                  height="500px" 
-                  title="PDF Preview"
-                />
-              ) : (
-                <div className="alert alert-info mt-3">
-                  <FileText size={48} className="mb-2" />
-                  <p>No preview available for this file type.</p>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => downloadFile(selectedFile)}
-                  >
-                    <Download size={16} className="me-2" />
-                    Download File
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="thaniya-normal-footer">
-            <button onClick={closeFileModal} className="s-btn s-btn-light">
-              Close
-            </button>
-            <button 
-              onClick={() => downloadFile(selectedFile)} 
-              className="s-btn s-btn-grad-danger"
-            >
-              <Download size={16} className="me-2" />
-              Download
-            </button>
+  return (
+    <div className={`thaniya-normal-overlay ${showFileModal ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={closeFileModal}></div>
+      <div
+        className={`thaniya-normal-modal ${showFileModal ? "thaniya-normal-modal-visible" : ""}`}
+        style={{ maxWidth: "800px", width: "90%" }}
+      >
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">File Preview</h2>
+          <button onClick={closeFileModal} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="thaniya-normal-body">
+          <div className="text-center">
+            <h5>{selectedFile.name}</h5>
+            
+            {isImage ? (
+              <img 
+                src={selectedFile.url || URL.createObjectURL(selectedFile)} 
+                alt="Preview" 
+                style={{ maxWidth: '100%', maxHeight: '500px' }}
+              />
+            ) : isPDF ? (
+              <iframe 
+                src={selectedFile.url || URL.createObjectURL(selectedFile)} 
+                width="100%" 
+                height="500px" 
+                title="PDF Preview"
+              />
+            ) : (
+              <div className="alert alert-info mt-3">
+                <FileText size={48} className="mb-2" />
+                <p>No preview available for this file type.</p>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => downloadFile(selectedFile)}
+                >
+                  <Download size={16} className="me-2" />
+                  Download File
+                </button>
+              </div>
+            )}
           </div>
         </div>
+        <div className="thaniya-normal-footer">
+          <button onClick={closeFileModal} className="s-btn s-btn-light">
+            Close
+          </button>
+          <button 
+            onClick={() => downloadFile(selectedFile)} 
+            className="s-btn s-btn-grad-danger"
+          >
+            <Download size={16} className="me-2" />
+            Download
+          </button>
+        </div>
       </div>
-    );
+    </div>
+  );
+};
+  // Add Income Modal Component
+// Add Income Modal Component
+const AddModal = () => {
+  const initialForm = {
+    date: new Date().toISOString().split("T")[0],
+    category_id: "",
+    subcategory_id: "",
+    variant_id: "",
+    description: "",
+    payer_name: "",
+    amount: "",
+    payment_mode_id: "",
+    bill_id: "",
+    status: 1,
+    image: null, // Changed from files[] to single image
   };
 
-  // Add Income Modal Component
-  const AddModal = () => {
-    const initialForm = {
-      date: new Date().toISOString().split("T")[0],
-      category_id: "",
-      subcategory_id: "",
-      variant_id: "",
-      description: "",
-      payer_name: "",
-      amount: "",
-      payment_mode_id: "",
-      bill_id: "",
-      status: 1,
-      files: [],
-    };
+  const [localIncome, setLocalIncome] = useState(initialForm);
+  const [localErrors, setLocalErrors] = useState({});
+  const [imagePreview, setImagePreview] = useState(null);
 
-    const [localIncome, setLocalIncome] = useState(initialForm);
-    const [localErrors, setLocalErrors] = useState({});
+  const handleReset = () => {
+    setLocalIncome(initialForm);
+    setLocalErrors({});
+    setImagePreview(null);
+  };
 
-    const handleReset = () => {
-      setLocalIncome(initialForm);
-      setLocalErrors({});
-    };
+  const handleClose = () => {
+    handleReset();
+    closeModal();
+  };
 
-    const handleClose = () => {
+  const handleAdd = async () => {
+    if (!validateForm(localIncome)) return;
+
+    try {
+      await addIncome(localIncome);
       handleReset();
       closeModal();
-    };
-
-    const handleAdd = async () => {
-      if (!validateForm(localIncome)) return;
-
-      try {
-        await handleAddIncome(localIncome);
-        handleReset();
-      } catch (error) {
-        // Error handled in handleAddIncome
-      }
-    };
-
-    const handleFileUpload = (e) => {
-      const files = Array.from(e.target.files);
-      setLocalIncome(prev => ({
-        ...prev,
-        files: [...prev.files, ...files]
-      }));
-    };
-
-    const removeFile = (fileIndex) => {
-      setLocalIncome(prev => ({
-        ...prev,
-        files: prev.files.filter((_, index) => index !== fileIndex)
-      }));
-    };
-
-    return (
-      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
-        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
-
-        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
-          <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">Add Income Record</h2>
-            <button onClick={handleClose} className="thaniya-normal-close">
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="thaniya-normal-body">
-            {apiError && <Alert variant="danger">{apiError}</Alert>}
-            <Form>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Date</Form.Label>
-                    <div className="input-group">
-                      <span className="input-group-text">
-                        <Calendar size={16} />
-                      </span>
-                      <Form.Control
-                        type="date"
-                        className="form-control-lg"
-                        value={localIncome.date}
-                        onChange={(e) => setLocalIncome({ ...localIncome, date: e.target.value })}
-                        isInvalid={!!localErrors.date}
-                      />
-                      <Form.Control.Feedback type="invalid">{localErrors.date}</Form.Control.Feedback>
-                    </div>
-                  </Form.Group>
-
-           <Form.Group className="mb-3">
-  <Form.Label>Category</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={localIncome.category_id}
-    onChange={(e) =>
-      setLocalIncome({
-        ...localIncome,
-        category_id: e.target.value,
-        subcategory_id: "",
-        variant_id: "",
-      })
+    } catch (error) {
+      alert(error.message || 'Failed to add income record');
     }
-    isInvalid={!!localErrors.category_id}
-  >
-    <option value="">Select Category</option>
-    {categories.map((c) => (
-      <option key={c.id} value={c.id}>
-        {c.category_name} {/* Changed from c.name to c.category_name */}
-      </option>
-    ))}
-  </Form.Select>
-  <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
-</Form.Group>
-
-<Form.Group className="mb-3">
-  <Form.Label>Subcategory</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={localIncome.subcategory_id}
-    onChange={(e) =>
-      setLocalIncome({ ...localIncome, subcategory_id: e.target.value, variant_id: "" })
-    }
-  >
-    <option value="">Select Subcategory</option>
-    {subcategories
-      .filter((sc) => sc.main_category_id === parseInt(localIncome.category_id))
-      .map((sc) => (
-        <option key={sc.id} value={sc.id}>
-          {sc.sub_category_name} {/* Changed from sc.name to sc.sub_category_name */}
-        </option>
-      ))}
-  </Form.Select>
-</Form.Group>
-                
-<Form.Group className="mb-3">
-  <Form.Label>Variant</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={localIncome.variant_id}
-    onChange={(e) =>
-      setLocalIncome({ ...localIncome, variant_id: e.target.value })
-    }
-  >
-    <option value="">Select Variant</option>
-    {variants.map((v) => (
-      <option key={v.id} value={v.id}>
-        {v.variant_name} {v.option_values ? `- ${v.option_values}` : ""}
-      </option>
-    ))}
-  </Form.Select>
-</Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
-                      className="form-control-lg"
-                      placeholder="Enter description"
-                      value={localIncome.description}
-                      onChange={(e) => setLocalIncome({ ...localIncome, description: e.target.value })}
-                    />
-                  </Form.Group>
-                </Col>
-
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Payer Name</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter payer name"
-                      value={localIncome.payer_name}
-                      onChange={(e) => setLocalIncome({ ...localIncome, payer_name: e.target.value })}
-                      isInvalid={!!localErrors.payer_name}
-                    />
-                    <Form.Control.Feedback type="invalid">{localErrors.payer_name}</Form.Control.Feedback>
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Amount</Form.Label>
-                    <Form.Control
-                      type="number"
-                      className="form-control-lg"
-                      placeholder="Enter amount"
-                      value={localIncome.amount}
-                      onChange={(e) => setLocalIncome({ ...localIncome, amount: e.target.value })}
-                      isInvalid={!!localErrors.amount}
-                    />
-                    <Form.Control.Feedback type="invalid">{localErrors.amount}</Form.Control.Feedback>
-                  </Form.Group>
-
-      
-<Form.Group className="mb-3">
-  <Form.Label>Payment Mode</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={localIncome.payment_mode_id}
-    onChange={(e) => setLocalIncome({ ...localIncome, payment_mode_id: e.target.value })}
-    isInvalid={!!localErrors.payment_mode_id}
-  >
-    <option value="">Select Payment Mode</option>
-    {paymentModes.map((pm) => (
-      <option key={pm.id} value={pm.id}>
-        {pm.payment_method} {/* Changed from pm.name to pm.payment_method */}
-      </option>
-    ))}
-  </Form.Select>
-  <Form.Control.Feedback type="invalid">{localErrors.payment_mode_id}</Form.Control.Feedback>
-</Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Bill / Invoice ID</Form.Label>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter bill/invoice ID"
-                      value={localIncome.bill_id}
-                      onChange={(e) => setLocalIncome({ ...localIncome, bill_id: e.target.value })}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Attach Files</Form.Label>
-                    <Form.Control
-                      type="file"
-                      className="form-control-lg"
-                      multiple
-                      onChange={handleFileUpload}
-                    />
-                    <Form.Text className="text-muted">
-                      You can attach multiple files (receipts, invoices, etc.)
-                    </Form.Text>
-                  </Form.Group>
-
-                  {localIncome.files.length > 0 && (
-                    <div className="mb-3">
-                      <h6>Attached Files:</h6>
-                      <ul className="list-group">
-                        {localIncome.files.map((file, index) => (
-                          <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                            <span className="text-truncate" style={{maxWidth: '70%'}}>
-                              <Paperclip size={14} className="me-2" />
-                              {file.name}
-                            </span>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X size={14} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </Col>
-              </Row>
-            </Form>
-          </div>
-
-          <div className="thaniya-normal-footer">
-            <button onClick={handleReset} className="s-btn s-btn-light">
-              Reset
-            </button>
-            <button onClick={handleAdd} className="s-btn s-btn-grad-danger">
-              Save Income
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+
+      setLocalIncome(prev => ({
+        ...prev,
+        image: file
+      }));
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setLocalIncome(prev => ({
+      ...prev,
+      image: null
+    }));
+    setImagePreview(null);
+  };
+
+  return (
+    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+      <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+
+      <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
+        <div className="thaniya-normal-header">
+          <h2 className="thaniya-normal-title">Add Income Record</h2>
+          <button onClick={handleClose} className="thaniya-normal-close">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="thaniya-normal-body">
+          {apiError && <Alert variant="danger">{apiError}</Alert>}
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date *</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <Calendar size={16} />
+                    </span>
+                    <Form.Control
+                      type="date"
+                      className="form-control-lg"
+                      value={localIncome.date}
+                      onChange={(e) => setLocalIncome({ ...localIncome, date: e.target.value })}
+                      isInvalid={!!localErrors.date}
+                    />
+                    <Form.Control.Feedback type="invalid">{localErrors.date}</Form.Control.Feedback>
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Category *</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={localIncome.category_id}
+                    onChange={(e) =>
+                      setLocalIncome({
+                        ...localIncome,
+                        category_id: e.target.value,
+                        subcategory_id: "",
+                        variant_id: "",
+                      })
+                    }
+                    isInvalid={!!localErrors.category_id}
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.category_name || c.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Subcategory</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={localIncome.subcategory_id}
+                    onChange={(e) =>
+                      setLocalIncome({ ...localIncome, subcategory_id: e.target.value, variant_id: "" })
+                    }
+                    disabled={!localIncome.category_id}
+                  >
+                    <option value="">Select Subcategory</option>
+                    {subcategories
+                      .filter((sc) => sc.main_category_id === parseInt(localIncome.category_id))
+                      .map((sc) => (
+                        <option key={sc.id} value={sc.id}>
+                          {sc.sub_category_name || sc.name}
+                        </option>
+                      ))}
+                  </Form.Select>
+                </Form.Group>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Variant</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={localIncome.variant_id}
+                    onChange={(e) =>
+                      setLocalIncome({ ...localIncome, variant_id: e.target.value })
+                    }
+                  >
+                    <option value="">Select Variant</option>
+                    {variants.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.variant_name} {v.option_values ? `- ${v.option_values}` : ""}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    className="form-control-lg"
+                    placeholder="Enter description"
+                    value={localIncome.description}
+                    onChange={(e) => setLocalIncome({ ...localIncome, description: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Payer Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter payer name"
+                    value={localIncome.payer_name}
+                    onChange={(e) => setLocalIncome({ ...localIncome, payer_name: e.target.value })}
+                    isInvalid={!!localErrors.payer_name}
+                  />
+                  <Form.Control.Feedback type="invalid">{localErrors.payer_name}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Amount *</Form.Label>
+                  <Form.Control
+                    type="number"
+                    className="form-control-lg"
+                    placeholder="Enter amount"
+                    value={localIncome.amount}
+                    onChange={(e) => setLocalIncome({ ...localIncome, amount: e.target.value })}
+                    isInvalid={!!localErrors.amount}
+                  />
+                  <Form.Control.Feedback type="invalid">{localErrors.amount}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Payment Mode *</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={localIncome.payment_mode_id}
+                    onChange={(e) => setLocalIncome({ ...localIncome, payment_mode_id: e.target.value })}
+                    isInvalid={!!localErrors.payment_mode_id}
+                  >
+                    <option value="">Select Payment Mode</option>
+                    {paymentModes.map((pm) => (
+                      <option key={pm.id} value={pm.id}>
+                        {pm.payment_method || pm.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                  <Form.Control.Feedback type="invalid">{localErrors.payment_mode_id}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Bill / Invoice ID</Form.Label>
+                  <Form.Control
+                    type="text"
+                    className="form-control-lg"
+                    placeholder="Enter bill/invoice ID"
+                    value={localIncome.bill_id}
+                    onChange={(e) => setLocalIncome({ ...localIncome, bill_id: e.target.value })}
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Upload Receipt Image</Form.Label>
+                  <Form.Control
+                    type="file"
+                    className="form-control-lg"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                  <Form.Text className="text-muted">
+                    Supported formats: JPG, PNG, GIF (Max 5MB)
+                  </Form.Text>
+                </Form.Group>
+
+                {imagePreview && (
+                  <div className="mb-3">
+                    <Form.Label>Image Preview</Form.Label>
+                    <div className="border rounded p-3 text-center">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                        className="mb-2"
+                      />
+                      <div>
+                        <button 
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={removeImage}
+                        >
+                          <X size={14} className="me-1" />
+                          Remove Image
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Col>
+            </Row>
+          </Form>
+        </div>
+
+        <div className="thaniya-normal-footer">
+          <button onClick={handleReset} className="s-btn s-btn-light">
+            Reset
+          </button>
+          <button onClick={handleAdd} className="s-btn s-btn-grad-danger">
+            Save Income
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   // Edit Income Modal Component
-  const EditModal = () => (
+ // Edit Income Modal Component
+const EditModal = () => {
+  const [imagePreview, setImagePreview] = useState(null);
+  const [newImage, setNewImage] = useState(null);
+
+  useEffect(() => {
+    if (selectedIncome?.image_url) {
+      setImagePreview(selectedIncome.image_url);
+    }
+  }, [selectedIncome]);
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+
+      setNewImage(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setNewImage(null);
+    setImagePreview(selectedIncome?.image_url || null);
+  };
+
+  const handleUpdate = async () => {
+    if (!validateForm(selectedIncome)) return;
+
+    try {
+      const updateData = {
+        ...selectedIncome,
+        image: newImage // Include new image if uploaded
+      };
+
+      await updateIncome(selectedIncome.id, updateData);
+      setIncomes(
+        incomes.map((i) => (i.id === selectedIncome.id ? selectedIncome : i))
+      );
+      closeModal();
+    } catch (error) {
+      alert(error.message || 'Failed to update income record');
+    }
+  };
+
+  return (
     <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
       <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
       <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "900px", width: "90%" }}>
@@ -1074,7 +1236,7 @@ const IncomeMaster = () => {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Date</Form.Label>
+                  <Form.Label>Date *</Form.Label>
                   <div className="input-group">
                     <span className="input-group-text">
                       <Calendar size={16} />
@@ -1098,7 +1260,7 @@ const IncomeMaster = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Category</Form.Label>
+                  <Form.Label>Category *</Form.Label>
                   <Form.Select
                     className="form-control-lg"
                     value={selectedIncome?.category_id || ""}
@@ -1113,7 +1275,7 @@ const IncomeMaster = () => {
                     <option value="">Select Category</option>
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.name}
+                        {category.category_name || category.name}
                       </option>
                     ))}
                   </Form.Select>
@@ -1122,60 +1284,59 @@ const IncomeMaster = () => {
                   </Form.Control.Feedback>
                 </Form.Group>
 
-<Form.Group className="mb-3">
-  <Form.Label>Subcategory</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={selectedIncome?.subcategory_id || ""}
-    onChange={(e) =>
-      setSelectedIncome({
-        ...selectedIncome,
-        subcategory_id: e.target.value,
-      })
-    }
-  >
-    <option value="">Select Subcategory</option>
-    {subcategories
-      .filter(
-        (sc) =>
-          sc.main_category_id ===
-          parseInt(selectedIncome?.category_id || 0)
-      )
-      .map((subcategory) => (
-        <option key={subcategory.id} value={subcategory.id}>
-          {subcategory.sub_category_name} {/* Changed from subcategory.name to sub_category_name */}
-        </option>
-      ))}
-  </Form.Select>
-</Form.Group>
-
+                <Form.Group className="mb-3">
+                  <Form.Label>Subcategory</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={selectedIncome?.subcategory_id || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        subcategory_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select Subcategory</option>
+                    {subcategories
+                      .filter(
+                        (sc) =>
+                          sc.main_category_id ===
+                          parseInt(selectedIncome?.category_id || 0)
+                      )
+                      .map((subcategory) => (
+                        <option key={subcategory.id} value={subcategory.id}>
+                          {subcategory.sub_category_name || subcategory.name}
+                        </option>
+                      ))}
+                  </Form.Select>
+                </Form.Group>
               
-<Form.Group className="mb-3">
-  <Form.Label>Variant</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={selectedIncome?.variant_id || ""}
-    onChange={(e) =>
-      setSelectedIncome({
-        ...selectedIncome,
-        variant_id: e.target.value,
-      })
-    }
-  >
-    <option value="">Select Variant</option>
-    {variants
-      .filter(
-        (v) =>
-          v.subcategory_id ===
-          parseInt(selectedIncome?.subcategory_id || 0)
-      )
-      .map((variant) => (
-        <option key={variant.id} value={variant.id}>
-          {variant.variant_name} {/* Changed from variant.name to variant.variant_name */}
-        </option>
-      ))}
-  </Form.Select>
-</Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Variant</Form.Label>
+                  <Form.Select
+                    className="form-control-lg"
+                    value={selectedIncome?.variant_id || ""}
+                    onChange={(e) =>
+                      setSelectedIncome({
+                        ...selectedIncome,
+                        variant_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select Variant</option>
+                    {variants
+                      .filter(
+                        (v) =>
+                          v.subcategory_id ===
+                          parseInt(selectedIncome?.subcategory_id || 0)
+                      )
+                      .map((variant) => (
+                        <option key={variant.id} value={variant.id}>
+                          {variant.variant_name || variant.name}
+                        </option>
+                      ))}
+                  </Form.Select>
+                </Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Description</Form.Label>
@@ -1197,7 +1358,7 @@ const IncomeMaster = () => {
 
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Payer Name</Form.Label>
+                  <Form.Label>Payer Name *</Form.Label>
                   <div className="input-group">
                     <span className="input-group-text">
                       <User size={16} />
@@ -1222,7 +1383,7 @@ const IncomeMaster = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Amount</Form.Label>
+                  <Form.Label>Amount *</Form.Label>
                   <div className="input-group">
                     <span className="input-group-text">
                       <DollarSign size={16} />
@@ -1246,36 +1407,35 @@ const IncomeMaster = () => {
                   </Form.Control.Feedback>
                 </Form.Group>
 
-
-<Form.Group className="mb-3">
-  <Form.Label>Payment Mode</Form.Label>
-  <div className="input-group">
-    <span className="input-group-text">
-      <CreditCard size={16} />
-    </span>
-    <Form.Select
-      className="form-control-lg"
-      value={selectedIncome?.payment_mode_id || ""}
-      onChange={(e) =>
-        setSelectedIncome({
-          ...selectedIncome,
-          payment_mode_id: e.target.value,
-        })
-      }
-      isInvalid={!!errors.payment_mode_id}
-    >
-      <option value="">Select Payment Mode</option>
-      {paymentModes.map((mode) => (
-        <option key={mode.id} value={mode.id}>
-          {mode.payment_method} {/* Changed from mode.name to mode.payment_method */}
-        </option>
-      ))}
-    </Form.Select>
-  </div>
-  <Form.Control.Feedback type="invalid">
-    {errors.payment_mode_id}
-  </Form.Control.Feedback>
-</Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Payment Mode *</Form.Label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <CreditCard size={16} />
+                    </span>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={selectedIncome?.payment_mode_id || ""}
+                      onChange={(e) =>
+                        setSelectedIncome({
+                          ...selectedIncome,
+                          payment_mode_id: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.payment_mode_id}
+                    >
+                      <option value="">Select Payment Mode</option>
+                      {paymentModes.map((mode) => (
+                        <option key={mode.id} value={mode.id}>
+                          {mode.payment_method || mode.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </div>
+                  <Form.Control.Feedback type="invalid">
+                    {errors.payment_mode_id}
+                  </Form.Control.Feedback>
+                </Form.Group>
 
                 <Form.Group className="mb-3">
                   <Form.Label>Bill/Invoice ID</Form.Label>
@@ -1299,52 +1459,53 @@ const IncomeMaster = () => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
-                  <Form.Label>Attach More Files</Form.Label>
+                  <Form.Label>
+                    {selectedIncome?.image_url ? 'Update Receipt Image' : 'Upload Receipt Image'}
+                  </Form.Label>
                   <Form.Control
                     type="file"
                     className="form-control-lg"
-                    multiple
-                    onChange={(e) => handleFileUpload(e, selectedIncome?.id)}
+                    accept="image/*"
+                    onChange={handleImageUpload}
                   />
+                  <Form.Text className="text-muted">
+                    Leave empty to keep current image
+                  </Form.Text>
                 </Form.Group>
 
-                {selectedIncome?.files && selectedIncome.files.length > 0 && (
+                {imagePreview && (
                   <Form.Group className="mb-3">
-                    <Form.Label>Attached Files</Form.Label>
-                    <div className="list-group">
-                      {selectedIncome.files.map((file, index) => (
-                        <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center">
-                            <Paperclip size={14} className="me-2" />
-                            <span className="text-truncate" style={{maxWidth: '150px'}}>
-                              {file.name}
-                            </span>
-                          </div>
-                          <div>
-                            <button 
-                              className="btn btn-sm btn-outline-primary me-1"
-                              onClick={() => openFileModal(file)}
-                              title="View"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button 
-                              className="btn btn-sm btn-outline-success me-1"
-                              onClick={() => downloadFile(file)}
-                              title="Download"
-                            >
-                              <Download size={14} />
-                            </button>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeFile(selectedIncome.id, index)}
-                              title="Remove"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    <Form.Label>Image Preview</Form.Label>
+                    <div className="border rounded p-3 text-center">
+                      <img 
+                        src={imagePreview} 
+                        alt="Receipt" 
+                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                        className="mb-2"
+                      />
+                      <div>
+                        {newImage && (
+                          <button 
+                            type="button"
+                            className="btn btn-sm btn-outline-danger me-2"
+                            onClick={removeImage}
+                          >
+                            <X size={14} className="me-1" />
+                            Remove New Image
+                          </button>
+                        )}
+                        {selectedIncome?.image_url && (
+                          <a 
+                            href={selectedIncome.image_url} 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-sm btn-outline-primary"
+                          >
+                            <Eye size={14} className="me-1" />
+                            View Original
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </Form.Group>
                 )}
@@ -1357,7 +1518,7 @@ const IncomeMaster = () => {
             Cancel
           </button>
           <button
-            onClick={handleUpdateIncome}
+            onClick={handleUpdate}
             className="s-btn s-btn-grad-danger"
           >
             Update Income
@@ -1366,6 +1527,7 @@ const IncomeMaster = () => {
       </div>
     </div>
   );
+};
 
   // Delete Confirmation Modal Component
   const DeleteModal = () => (
@@ -1525,9 +1687,7 @@ const IncomeMaster = () => {
                 <Nav.Item>
                   <Nav.Link eventKey="records">Income Records</Nav.Link>
                 </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="files">Uploaded Files</Nav.Link>
-                </Nav.Item>
+           
               </Nav>
               
               {activeTab === "records" && (
@@ -1598,16 +1758,17 @@ const IncomeMaster = () => {
                           <td>{getCategoryName(income.category_id)}</td>
                           <td>${parseFloat(income.amount).toFixed(2)}</td>
                           <td>{getPaymentModeName(income.payment_mode_id)}</td>
-                          <td>
-                            {income.files.length > 0 ? (
-                              <Badge bg="success">
-                                <Paperclip size={12} className="me-1" />
-                                {income.files.length}
-                              </Badge>
-                            ) : (
-                              <Badge bg="secondary">None</Badge>
-                            )}
-                          </td>
+                        // In your table row, update the files column to:
+<td>
+  {income.image_url ? (
+    <Badge bg="success" className="cursor-pointer" onClick={() => openImagePreview(income)}>
+      <Paperclip size={12} className="me-1" />
+      Image
+    </Badge>
+  ) : (
+    <Badge bg="secondary">No Image</Badge>
+  )}
+</td>
                           <td>
                             <div className="d-flex">
                               <button

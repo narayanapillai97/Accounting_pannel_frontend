@@ -6,160 +6,218 @@ import {
   Button, 
   Table,
   Form,
-  Badge,
-  Alert
+  Alert,
+  Spinner,
+  Badge
 } from "react-bootstrap";
 import { 
   FileText,
   Download,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Calendar,
+  BarChart3
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import PageTitle from "../../layouts/PageTitle";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import DateRangePicker from "react-bootstrap-daterangepicker";
-
-// Import the JSON data
-import incomeData from "../../../../src/jsx/components/reportdata/reportdata.json";
-
 
 const ProfitAndLossReport = () => {
-  const [incomes, setIncomes] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [filteredIncomes, setFilteredIncomes] = useState([]);
-  const [filteredExpenses, setFilteredExpenses] = useState([]);
+  const [reportData, setReportData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    startDate: null,
-    endDate: null
+    startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // First day of current month
+    endDate: new Date() // Today
   });
 
-  // Load data from JSON files
-  useEffect(() => {
+  // API base URL - adjust according to your setup
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008";
+
+  // Fetch profit & loss data from API
+  const fetchProfitLossData = async (startDate, endDate) => {
     try {
-      setIncomes(incomeData.incomes);
-      setExpenses(incomeData.expenditures);
-      setFilteredIncomes(incomeData.incomes);
-      setFilteredExpenses(incomeData.expenditures);
-      setIsLoading(false);
+      setIsLoading(true);
+      setError(null);
+
+      const fromDate = startDate.toISOString().split('T')[0];
+      const toDate = endDate.toISOString().split('T')[0];
+
+      const response = await fetch(
+        `${API_BASE_URL}/profit-loss/summary/${fromDate}/${toDate}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authtoken')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setReportData(data.summary);
+      } else {
+        throw new Error(data.error || "Failed to fetch data");
+      }
     } catch (err) {
+      console.error("Error fetching profit & loss data:", err);
       setError(err.message);
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
-  // Apply filters
+  // Fetch data when component mounts or filters change
   useEffect(() => {
-    let incomeResult = [...incomes];
-    let expenseResult = [...expenses];
-
-    if (filters.startDate) {
-      incomeResult = incomeResult.filter(item => new Date(item.date) >= filters.startDate);
-      expenseResult = expenseResult.filter(item => new Date(item.date) >= filters.startDate);
+    if (filters.startDate && filters.endDate) {
+      fetchProfitLossData(filters.startDate, filters.endDate);
     }
+  }, [filters.startDate, filters.endDate]);
 
-    if (filters.endDate) {
-      incomeResult = incomeResult.filter(item => new Date(item.date) <= filters.endDate);
-      expenseResult = expenseResult.filter(item => new Date(item.date) <= filters.endDate);
+  // Handle date range change
+  const handleDateChange = (dates) => {
+    const [start, end] = dates;
+    setFilters({
+      startDate: start,
+      endDate: end
+    });
+  };
+
+  // Download PDF Report
+  const downloadPdfReport = () => {
+    if (!reportData) return;
+
+    const doc = new jsPDF();
+    
+    // Report title
+    doc.setFontSize(18);
+    doc.text("PROFIT AND LOSS STATEMENT", 105, 15, { align: "center" });
+    
+    // Period information
+    doc.setFontSize(10);
+    let yPosition = 25;
+    
+    const dateRange = `Period: ${filters.startDate.toLocaleDateString()} - ${filters.endDate.toLocaleDateString()}`;
+    doc.text(dateRange, 14, yPosition);
+    yPosition += 5;
+    
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPosition);
+    yPosition += 10;
+    
+    // Financial Summary
+    doc.setFontSize(14);
+    doc.text("FINANCIAL SUMMARY", 14, yPosition);
+    yPosition += 8;
+    
+    // Summary table
+    doc.autoTable({
+      startY: yPosition,
+      head: [["Description", "Amount (₹)"]],
+      body: [
+        ["Total Income", parseFloat(reportData.financials.totalIncome).toFixed(2)],
+        ["Total Expenditure", parseFloat(reportData.financials.totalExpenditure).toFixed(2)],
+        [
+          `Net ${reportData.financials.isProfit ? "Profit" : "Loss"}`,
+          parseFloat(reportData.financials.netProfitLoss).toFixed(2)
+        ]
+      ],
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [51, 122, 183] },
+      columnStyles: { 1: { halign: 'right' } },
+   didDrawCell: (data) => {
+  if (data.section === 'body' && data.row.index === 2) {
+    if (reportData.financials.isProfit) {
+      doc.setFillColor(220, 255, 220); // Light green
+    } else {
+      doc.setFillColor(255, 220, 220); // Light red
     }
-
-    setFilteredIncomes(incomeResult);
-    setFilteredExpenses(expenseResult);
-  }, [filters, incomes, expenses]);
-
-  // Calculate totals
-  const totalIncome = filteredIncomes.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-  const totalExpenses = filteredExpenses.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-  const netProfit = totalIncome - totalExpenses;
-
-const downloadPdfReport = () => {
-  const doc = new jsPDF();
-  
-  // Report title
-  doc.setFontSize(18);
-  doc.text("PROFIT AND LOSS STATEMENT", 105, 15, { align: "center" });
-  
-  // Period information
-  doc.setFontSize(10);
-  let yPosition = 25;
-  
-  const dateRange = `Period: ${filters.startDate ? filters.startDate.toLocaleDateString() : 'All'} - ${filters.endDate ? filters.endDate.toLocaleDateString() : 'All'}`;
-  doc.text(dateRange, 14, yPosition);
-  yPosition += 5;
-  
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, yPosition);
-  yPosition += 10;
-  
-  // Income section
-  doc.setFontSize(14);
-  doc.text("INCOME", 14, yPosition);
-  yPosition += 8;
-  
-  // Income table
-  doc.autoTable({
-    startY: yPosition,
-    head: [["Description", "Amount (₹)"]],
-    body: [
-      ["Total Income", parseFloat(totalIncome).toFixed(2)]
-    ],
-    styles: { fontSize: 10, cellPadding: 3 },
-    headStyles: { fillColor: [51, 122, 183] },
-    columnStyles: { 1: { halign: 'right' } }
-  });
-  
-  yPosition = doc.lastAutoTable.finalY + 10;
-  
-  // Expenses section
-  doc.setFontSize(14);
-  doc.text("EXPENSES", 14, yPosition);
-  yPosition += 8;
-  
-  // Expenses table
-  doc.autoTable({
-    startY: yPosition,
-    head: [["Description", "Amount (₹)"]],
-    body: [
-      ["Total Expenses", parseFloat(totalExpenses).toFixed(2)]
-    ],
-    styles: { fontSize: 10, cellPadding: 3 },
-    headStyles: { fillColor: [51, 122, 183] },
-    columnStyles: { 1: { halign: 'right' } }
-  });
-  
-  yPosition = doc.lastAutoTable.finalY + 15;
-  
-  // Net Profit/Loss
-  doc.setFontSize(14);
-  // Correct way to set text color - using RGB values (0-255)
-  if (netProfit >= 0) {
-    doc.setTextColor(0, 128, 0); // Green for profit
-  } else {
-    doc.setTextColor(255, 0, 0); // Red for loss
+    doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
   }
-  doc.text(`NET ${netProfit >= 0 ? "PROFIT" : "LOSS"}: ₹${Math.abs(netProfit).toFixed(2)}`, 14, yPosition);
-  
-  // Reset text color to black for any future text
-  doc.setTextColor(0, 0, 0);
-  
-  doc.save(`Profit_and_Loss_${new Date().toISOString().slice(0, 10)}.pdf`);
-};
+}
 
+    });
+    
+    yPosition = doc.lastAutoTable.finalY + 10;
+    
+    // Income by Category
+    if (Object.keys(reportData.breakdown.incomeByCategory).length > 0) {
+      doc.setFontSize(12);
+      doc.text("INCOME BY CATEGORY", 14, yPosition);
+      yPosition += 6;
+      
+      const incomeData = Object.entries(reportData.breakdown.incomeByCategory).map(([category, amount]) => [
+        category,
+        parseFloat(amount).toFixed(2)
+      ]);
+      
+      doc.autoTable({
+        startY: yPosition,
+        head: [["Category", "Amount (₹)"]],
+        body: incomeData,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [34, 139, 34] },
+        columnStyles: { 1: { halign: 'right' } }
+      });
+      
+      yPosition = doc.lastAutoTable.finalY + 10;
+    }
+    
+    // Expenditure by Category
+    if (Object.keys(reportData.breakdown.expenditureByCategory).length > 0) {
+      doc.setFontSize(12);
+      doc.text("EXPENDITURE BY CATEGORY", 14, yPosition);
+      yPosition += 6;
+      
+      const expenseData = Object.entries(reportData.breakdown.expenditureByCategory).map(([category, amount]) => [
+        category,
+        parseFloat(amount).toFixed(2)
+      ]);
+      
+      doc.autoTable({
+        startY: yPosition,
+        head: [["Category", "Amount (₹)"]],
+        body: expenseData,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [220, 53, 69] },
+        columnStyles: { 1: { halign: 'right' } }
+      });
+    }
+    
+    doc.save(`Profit_Loss_${filters.startDate.toISOString().slice(0, 10)}_to_${filters.endDate.toISOString().slice(0, 10)}.pdf`);
+  };
+
+  // Export to Excel/CSV
   const exportToExcel = () => {
-    // Create CSV content
+    if (!reportData) return;
+
     let csvContent = "Category,Amount (₹)\n";
     
-    // Income section
-    csvContent += `Total Income,${parseFloat(totalIncome).toFixed(2)}\n`;
+    // Financial Summary
+    csvContent += "FINANCIAL SUMMARY\n";
+    csvContent += `Total Income,${parseFloat(reportData.financials.totalIncome).toFixed(2)}\n`;
+    csvContent += `Total Expenditure,${parseFloat(reportData.financials.totalExpenditure).toFixed(2)}\n`;
+    csvContent += `Net ${reportData.financials.isProfit ? "Profit" : "Loss"},${parseFloat(reportData.financials.netProfitLoss).toFixed(2)}\n\n`;
     
-    // Expenses section
-    csvContent += `Total Expenses,${parseFloat(totalExpenses).toFixed(2)}\n`;
+    // Income by Category
+    csvContent += "INCOME BY CATEGORY\n";
+    Object.entries(reportData.breakdown.incomeByCategory).forEach(([category, amount]) => {
+      csvContent += `${category},${parseFloat(amount).toFixed(2)}\n`;
+    });
     
-    // Net Profit/Loss
-    csvContent += `Net ${netProfit >= 0 ? "Profit" : "Loss"},${Math.abs(netProfit).toFixed(2)}\n`;
+    csvContent += "\n";
+    
+    // Expenditure by Category
+    csvContent += "EXPENDITURE BY CATEGORY\n";
+    Object.entries(reportData.breakdown.expenditureByCategory).forEach(([category, amount]) => {
+      csvContent += `${category},${parseFloat(amount).toFixed(2)}\n`;
+    });
     
     // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -167,7 +225,7 @@ const downloadPdfReport = () => {
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `Profit_and_Loss_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `Profit_Loss_${filters.startDate.toISOString().slice(0, 10)}_to_${filters.endDate.toISOString().slice(0, 10)}.csv`);
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);
@@ -175,20 +233,27 @@ const downloadPdfReport = () => {
     document.body.removeChild(link);
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Quick date range presets
+  const applyQuickFilter = (days) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - days);
+    setFilters({
+      startDate: start,
+      endDate: end
+    });
   };
 
-  if (isLoading) {
-    return <div className="text-center py-5">Loading...</div>;
-  }
-
-  if (error) {
-    return <Alert variant="danger" className="m-3">{error}</Alert>;
+  if (isLoading && !reportData) {
+    return (
+      <Fragment>
+        <PageTitle activeMenu="Profit & Loss Report" motherMenu="Finance" />
+        <div className="text-center py-5">
+          <Spinner animation="border" variant="primary" />
+          <p className="mt-2">Loading Profit & Loss Report...</p>
+        </div>
+      </Fragment>
+    );
   }
 
   return (
@@ -199,91 +264,260 @@ const downloadPdfReport = () => {
         <Col lg="12">
           <Card>
             <Card.Header className="d-flex justify-content-between align-items-center">
-              <Card.Title>Profit & Loss Statement</Card.Title>
+              <Card.Title>
+                <BarChart3 size={20} className="me-2" />
+                Profit & Loss Statement
+              </Card.Title>
               <div>
-                <Button variant="primary" className="me-2" onClick={exportToExcel}>
+                <Button 
+                  variant="outline-primary" 
+                  className="me-2" 
+                  onClick={exportToExcel}
+                  disabled={!reportData}
+                >
                   <Download size={16} className="me-1" />
-                  Export to Excel
+                  Export CSV
                 </Button>
-                <Button variant="danger" onClick={downloadPdfReport}>
-                  <Download size={16} className="me-1" />
+                <Button 
+                  variant="danger" 
+                  onClick={downloadPdfReport}
+                  disabled={!reportData}
+                >
+                  <FileText size={16} className="me-1" />
                   Download PDF
                 </Button>
               </div>
             </Card.Header>
 
             <Card.Body>
+              {/* Quick Filters */}
+              <Row className="mb-3">
+                <Col md={12}>
+                  <div className="d-flex gap-2 flex-wrap">
+                    <Button 
+                      variant="outline-secondary" 
+                      size="sm"
+                      onClick={() => applyQuickFilter(7)}
+                    >
+                      Last 7 Days
+                    </Button>
+                    <Button 
+                      variant="outline-secondary" 
+                      size="sm"
+                      onClick={() => applyQuickFilter(30)}
+                    >
+                      Last 30 Days
+                    </Button>
+                    <Button 
+                      variant="outline-secondary" 
+                      size="sm"
+                      onClick={() => {
+                        const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                        const end = new Date();
+                        setFilters({ startDate: start, endDate: end });
+                      }}
+                    >
+                      This Month
+                    </Button>
+                    <Button 
+                      variant="outline-secondary" 
+                      size="sm"
+                      onClick={() => {
+                        const start = new Date(new Date().getFullYear(), 0, 1);
+                        const end = new Date();
+                        setFilters({ startDate: start, endDate: end });
+                      }}
+                    >
+                      This Year
+                    </Button>
+                  </div>
+                </Col>
+              </Row>
+
+              {/* Date Range Picker */}
               <Row className="mb-4">
-                 <Col md={6}>
+                <Col md={6}>
                   <Form.Group>
-                    <Form.Label>Date Range</Form.Label>
+                    <Form.Label>
+                      <Calendar size={16} className="me-1" />
+                      Date Range
+                    </Form.Label>
                     <DatePicker
                       selectsRange={true}
                       startDate={filters.startDate}
                       endDate={filters.endDate}
-                      onChange={(update) => {
-                        setFilters({
-                          ...filters,
-                          startDate: update[0],
-                          endDate: update[1],
-                        });
-                      }}
-                      isClearable={true}
+                      onChange={handleDateChange}
                       className="form-control"
                       placeholderText="Select start and end date"
-                      dateFormat="MM/dd/yyyy"
+                      dateFormat="MMM dd, yyyy"
+                      isClearable={false}
                     />
                   </Form.Group>
                 </Col>
-              </Row>
-
-              <Row>
-                <Col md={12}>
-                  <Card>
-                    <Card.Body>
-                      <div className="table-responsive">
-                        <Table striped bordered hover>
-                          <thead>
-                            <tr>
-                              <th>Category</th>
-                              <th>Amount (₹)</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr className="bg-light">
-                              <td colSpan="2" className="fw-bold">INCOME</td>
-                            </tr>
-                            <tr>
-                              <td>Total Income</td>
-                              <td className="text-end">{parseFloat(totalIncome).toFixed(2)}</td>
-                            </tr>
-                            
-                            <tr className="bg-light">
-                              <td colSpan="2" className="fw-bold">EXPENSES</td>
-                            </tr>
-                            <tr>
-                              <td>Total Expenses</td>
-                              <td className="text-end">{parseFloat(totalExpenses).toFixed(2)}</td>
-                            </tr>
-                            
-                            <tr className={netProfit >= 0 ? "bg-success-light" : "bg-danger-light"}>
-                              <td className="fw-bold">NET {netProfit >= 0 ? "PROFIT" : "LOSS"}</td>
-                              <td className={`text-end fw-bold ${netProfit >= 0 ? "text-success" : "text-danger"}`}>
-                                {netProfit >= 0 ? (
-                                  <TrendingUp size={18} className="me-1" />
-                                ) : (
-                                  <TrendingDown size={18} className="me-1" />
-                                )}
-                                ₹{Math.abs(netProfit).toFixed(2)}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </Table>
-                      </div>
-                    </Card.Body>
-                  </Card>
+                <Col md={6} className="d-flex align-items-end">
+                  {reportData && (
+                    <Badge bg="light" text="dark">
+                      {filters.startDate.toLocaleDateString()} to {filters.endDate.toLocaleDateString()}
+                    </Badge>
+                  )}
                 </Col>
               </Row>
+
+              {error && (
+                <Alert variant="danger" className="mb-4">
+                  {error}
+                </Alert>
+              )}
+
+              {reportData && (
+                <Row>
+                  <Col md={12}>
+                    <Card>
+                      <Card.Body>
+                        {/* Financial Summary Cards */}
+                        <Row className="mb-4">
+                          <Col md={4}>
+                            <Card className="text-center bg-light">
+                              <Card.Body>
+                                <h6 className="card-title">Total Income</h6>
+                                <h4 className="text-success">
+                                  ₹{parseFloat(reportData.financials.totalIncome).toFixed(2)}
+                                </h4>
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                          <Col md={4}>
+                            <Card className="text-center bg-light">
+                              <Card.Body>
+                                <h6 className="card-title">Total Expenditure</h6>
+                                <h4 className="text-danger">
+                                  ₹{parseFloat(reportData.financials.totalExpenditure).toFixed(2)}
+                                </h4>
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                          <Col md={4}>
+                            <Card className={`text-center ${reportData.financials.isProfit ? 'bg-success-light' : 'bg-danger-light'}`}>
+                              <Card.Body>
+                                <h6 className="card-title">Net {reportData.financials.isProfit ? "Profit" : "Loss"}</h6>
+                                <h4 className={reportData.financials.isProfit ? "text-success" : "text-danger"}>
+                                  {reportData.financials.isProfit ? (
+                                    <TrendingUp size={20} className="me-1" />
+                                  ) : (
+                                    <TrendingDown size={20} className="me-1" />
+                                  )}
+                                  ₹{Math.abs(parseFloat(reportData.financials.netProfitLoss)).toFixed(2)}
+                                </h4>
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                        </Row>
+
+                        {/* Detailed Table */}
+                        <div className="table-responsive">
+                          <Table striped bordered hover>
+                            <thead>
+                              <tr>
+                                <th>Category</th>
+                                <th className="text-end">Amount (₹)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="bg-light">
+                                <td colSpan="2" className="fw-bold">INCOME</td>
+                              </tr>
+                              <tr>
+                                <td>Total Income</td>
+                                <td className="text-end fw-bold text-success">
+                                  {parseFloat(reportData.financials.totalIncome).toFixed(2)}
+                                </td>
+                              </tr>
+                              
+                              <tr className="bg-light">
+                                <td colSpan="2" className="fw-bold">EXPENDITURE</td>
+                              </tr>
+                              <tr>
+                                <td>Total Expenditure</td>
+                                <td className="text-end fw-bold text-danger">
+                                  {parseFloat(reportData.financials.totalExpenditure).toFixed(2)}
+                                </td>
+                              </tr>
+                              
+                              <tr className={reportData.financials.isProfit ? "bg-success-light" : "bg-danger-light"}>
+                                <td className="fw-bold">
+                                  NET {reportData.financials.isProfit ? "PROFIT" : "LOSS"}
+                                </td>
+                                <td className={`text-end fw-bold ${reportData.financials.isProfit ? "text-success" : "text-danger"}`}>
+                                  {reportData.financials.isProfit ? (
+                                    <TrendingUp size={18} className="me-1" />
+                                  ) : (
+                                    <TrendingDown size={18} className="me-1" />
+                                  )}
+                                  ₹{Math.abs(parseFloat(reportData.financials.netProfitLoss)).toFixed(2)}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </Table>
+                        </div>
+
+                        {/* Category Breakdown */}
+                        <Row>
+                          <Col md={6}>
+                            <Card>
+                              <Card.Header>
+                                <Card.Title>Income by Category</Card.Title>
+                              </Card.Header>
+                              <Card.Body>
+                                {Object.keys(reportData.breakdown.incomeByCategory).length > 0 ? (
+                                  <Table size="sm">
+                                    <tbody>
+                                      {Object.entries(reportData.breakdown.incomeByCategory).map(([category, amount]) => (
+                                        <tr key={category}>
+                                          <td>{category}</td>
+                                          <td className="text-end text-success">
+                                            ₹{parseFloat(amount).toFixed(2)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </Table>
+                                ) : (
+                                  <p className="text-muted">No income data available</p>
+                                )}
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                          <Col md={6}>
+                            <Card>
+                              <Card.Header>
+                                <Card.Title>Expenditure by Category</Card.Title>
+                              </Card.Header>
+                              <Card.Body>
+                                {Object.keys(reportData.breakdown.expenditureByCategory).length > 0 ? (
+                                  <Table size="sm">
+                                    <tbody>
+                                      {Object.entries(reportData.breakdown.expenditureByCategory).map(([category, amount]) => (
+                                        <tr key={category}>
+                                          <td>{category}</td>
+                                          <td className="text-end text-danger">
+                                            ₹{parseFloat(amount).toFixed(2)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </Table>
+                                ) : (
+                                  <p className="text-muted">No expenditure data available</p>
+                                )}
+                              </Card.Body>
+                            </Card>
+                          </Col>
+                        </Row>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              )}
             </Card.Body>
           </Card>
         </Col>

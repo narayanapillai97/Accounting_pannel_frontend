@@ -113,7 +113,7 @@ const PayModeMaster = () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}paymode/delete/${selectedPayMode.id}`, {
         method: "DELETE",
         headers: {
@@ -136,7 +136,7 @@ const PayModeMaster = () => {
 
   const handleAddPayMode = async (payModeData) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}paymode/post`, {
         method: "POST",
         headers: {
@@ -161,7 +161,7 @@ const PayModeMaster = () => {
 
   const handleUpdatePayMode = async (payModeData) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}paymode/update/${payModeData.id}`, {
         method: "PUT",
         headers: {

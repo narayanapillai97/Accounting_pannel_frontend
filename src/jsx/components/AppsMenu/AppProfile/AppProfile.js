@@ -67,7 +67,7 @@ const Profile = () => {
       }
 
       const token = localStorage.getItem('authtoken');
-      const response = await fetch(`${API_BASE_URL}/authRoutes/getby/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}authRoutes/getby/${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

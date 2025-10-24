@@ -31,29 +31,22 @@ const Verification = () => {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [employees, setEmployees] = useState([]); // Add employees state
 
   const [verifications, setVerifications] = useState([]);
-  const [newVerification, setNewVerification] = useState({
-    employee_id: "",
-    aadhar_number: "",
-    pan_number: "",
-    passport_no: "",
-    verification_date: "",
-    verified_by: "",
-    status: 1,
-  });
 
-  // Fetch verifications from API
+  // Fetch verifications and employees from API
   useEffect(() => {
     fetchVerifications();
+    fetchEmployees();
   }, []);
 
   const fetchVerifications = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("authtoken");
-      const response = await fetch(`${API_BASE_URL}verification/get`,{
-               headers: {
+      const response = await fetch(`${API_BASE_URL}verification/get`, {
+        headers: {
           Authorization: `Bearer ${token}`
         }
       });
@@ -68,6 +61,26 @@ const Verification = () => {
       setApiError("Failed to load verification data. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch employees for dropdown
+  const fetchEmployees = async () => {
+    try {
+      const token = localStorage.getItem("authtoken");
+      const response = await fetch(`${API_BASE_URL}employee/get`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setEmployees(data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      // Don't show error for employees fetch as it's secondary
     }
   };
 
@@ -87,39 +100,14 @@ const Verification = () => {
     );
   }, [verifications, searchTerm]);
 
-  const validateForm = (verificationData) => {
-    const newErrors = {};
-    if (!verificationData.employee_id)
-      newErrors.employee_id = "Please enter employee ID";
-    if (!verificationData.aadhar_number)
-      newErrors.aadhar_number = "Please enter Aadhar number";
-    if (!verificationData.pan_number)
-      newErrors.pan_number = "Please enter PAN number";
-    if (!verificationData.verification_date)
-      newErrors.verification_date = "Please select verification date";
-    if (!verificationData.verified_by)
-      newErrors.verified_by = "Please enter verified by";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const showSuccessMessage = (message) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   const openAddModal = () => {
-    setNewVerification({
-      employee_id: "",
-      aadhar_number: "",
-      pan_number: "",
-      passport_no: "",
-      verification_date: "",
-      verified_by: "",
-      status: 1,
-    });
     setErrors({});
+    setApiError("");
     setShowAddModal(true);
     setTimeout(() => setIsAnimating(true), 10);
   };
@@ -127,6 +115,7 @@ const Verification = () => {
   const openEditModal = (verification) => {
     setSelectedVerification({ ...verification });
     setErrors({});
+    setApiError("");
     setShowEditModal(true);
     setTimeout(() => setIsAnimating(true), 10);
   };
@@ -145,6 +134,7 @@ const Verification = () => {
       setShowDeleteModal(false);
       setSelectedVerification(null);
       setErrors({});
+      setApiError("");
     }, 300);
   };
 
@@ -153,6 +143,9 @@ const Verification = () => {
       const token = localStorage.getItem("authtoken");
       const response = await fetch(`${API_BASE_URL}verification/delete/${selectedVerification.id}`, {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
@@ -173,559 +166,497 @@ const Verification = () => {
     }
   };
 
-  const handleAddVerification = async () => {
-    if (!validateForm(newVerification)) return;
-
-    try {
-       const token = localStorage.getItem("authtoken");
-      const response = await fetch(`${API_BASE_URL}verification/post`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newVerification),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        // Refresh the list
-        fetchVerifications();
-        showSuccessMessage("Verification added successfully!");
-        closeModal();
-      } else {
-        throw new Error(result.error || "Failed to add verification");
-      }
-    } catch (error) {
-      console.error("Error adding verification:", error);
-      setApiError("Failed to add verification. Please try again.");
-    }
-  };
-
-  const handleUpdateVerification = async () => {
-    if (!validateForm(selectedVerification)) return;
-
-    try {
-       const token = localStorage.getItem("authtoken");
-      const response = await fetch(`${API_BASE_URL}verification/update/${selectedVerification.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(selectedVerification),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      if (result.success) {
-        // Refresh the list
-        fetchVerifications();
-        showSuccessMessage("Verification updated successfully!");
-        closeModal();
-      } else {
-        throw new Error(result.error || "Failed to update verification");
-      }
-    } catch (error) {
-      console.error("Error updating verification:", error);
-      setApiError("Failed to update verification. Please try again.");
-    }
-  };
-
   // Add Verification Modal
-const AddModal = ({ showAddModal, closeModal }) => {
-  const initialForm = {
-    employee_id: "",
-    aadhar_number: "",
-    pan_number: "",
-    passport_no: "",
-    verification_date: "",
-    verified_by: "",
-    status: 1,
-  };
+  const AddModal = ({ showAddModal, closeModal, employees }) => {
+    const initialForm = {
+      employee_id: "",
+      aadhar_number: "",
+      pan_number: "",
+      passport_no: "",
+      verification_date: "",
+      verified_by: "",
+      status: 1,
+    };
 
-  const [newVerification, setNewVerification] = useState(initialForm);
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+    const [newVerification, setNewVerification] = useState(initialForm);
+    const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (showAddModal) {
+    useEffect(() => {
+      if (showAddModal) {
+        setNewVerification(initialForm);
+        setErrors({});
+      }
+    }, [showAddModal]);
+
+    const handleReset = () => {
       setNewVerification(initialForm);
       setErrors({});
-    }
-  }, [showAddModal]);
+    };
 
-  const handleReset = () => {
-    setNewVerification(initialForm);
-    setErrors({});
-  };
+    const validateForm = (data) => {
+      const newErrors = {};
+      if (!data.employee_id) newErrors.employee_id = "Please select an employee";
+      if (!data.aadhar_number) newErrors.aadhar_number = "Please enter Aadhar number";
+      if (!data.pan_number.trim()) newErrors.pan_number = "Please enter PAN number";
+      if (!data.verification_date) newErrors.verification_date = "Please select verification date";
+      if (!data.verified_by.trim()) newErrors.verified_by = "Please enter verified by";
 
-  const validateForm = (data) => {
-    const newErrors = {};
-    if (!data.employee_id) newErrors.employee_id = "Please enter employee ID";
-    if (!data.aadhar_number) newErrors.aadhar_number = "Please enter Aadhar number";
-    if (!data.pan_number.trim()) newErrors.pan_number = "Please enter PAN number";
-    if (!data.verification_date) newErrors.verification_date = "Please select verification date";
-    if (!data.verified_by.trim()) newErrors.verified_by = "Please enter verified by";
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    const handleAddVerification = async () => {
+      if (!validateForm(newVerification)) return;
 
-  const handleAddVerification = async () => {
-    if (!validateForm(newVerification)) return;
+      try {
+        setSubmitting(true);
+        const token = localStorage.getItem("authtoken");
+        const response = await axios.post(`${API_BASE_URL}verification/post`, newVerification, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    try {
-      setSubmitting(true);
-       const token = localStorage.getItem("authtoken");
-      const response = await axios.post(`${API_BASE_URL}/verification/post`, newVerification, {
-        headers: { Authorization: token },
-      });
+        // Refresh the list instead of adding locally to ensure data consistency
+        fetchVerifications();
+        
+        setSuccessMessage("Verification added successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        closeModal();
+      } catch (error) {
+        console.error("Error adding verification:", error);
+        setApiError(error.response?.data?.error || "Failed to add verification");
+      } finally {
+        setSubmitting(false);
+      }
+    };
 
-      // Add new verification record with ID from backend
-      setVerifications([
-        ...verifications,
-        { ...newVerification, verification_id: response.data.verificationId },
-      ]);
-
-      setSuccessMessage("Verification added successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+    const handleClose = () => {
       closeModal();
-    } catch (error) {
-      console.error("Error adding verification:", error);
-      setApiError(error.response?.data?.error || "Failed to add verification");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    };
 
-  const handleClose = () => {
-    closeModal();
-  };
+    if (!showAddModal) return null;
 
-  if (!showAddModal) return null;
-
-  return (
-    <div
-      className={`thaniya-normal-overlay ${
-        isAnimating ? "thaniya-overlay-visible" : ""
-      }`}
-    >
-      <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+    return (
       <div
-        className={`thaniya-normal-modal ${
-          isAnimating ? "thaniya-normal-modal-visible" : ""
+        className={`thaniya-normal-overlay ${
+          isAnimating ? "thaniya-overlay-visible" : ""
         }`}
-        style={{ maxWidth: "900px", width: "90%" }}
       >
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Add Verification</h2>
-          <button onClick={handleClose} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
-        </div>
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+        <div
+          className={`thaniya-normal-modal ${
+            isAnimating ? "thaniya-normal-modal-visible" : ""
+          }`}
+          style={{ maxWidth: "900px", width: "90%" }}
+        >
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Add Verification</h2>
+            <button onClick={handleClose} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
 
-        <div className="thaniya-normal-body">
-          <Form>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Employee ID</Form.Label>
-                  <Form.Control
-                    type="number"
-                    className="form-control-lg"
-                    placeholder="Enter employee ID"
-                    value={newVerification.employee_id}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        employee_id: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.employee_id}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.employee_id}
-                  </Form.Control.Feedback>
-                </Form.Group>
+          <div className="thaniya-normal-body">
+            <Form>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Employee</Form.Label>
+                    <select
+                      className="form-control form-control-lg"
+                      value={newVerification.employee_id}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          employee_id: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.employee_id}
+                    >
+                      <option value="">Select Employee</option>
+                      {employees.map(employee => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.full_name} (ID: {employee.id}) - {employee.designation}
+                        </option>
+                      ))}
+                    </select>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.employee_id}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Aadhar Number</Form.Label>
-                  <Form.Control
-                    type="number"
-                    className="form-control-lg"
-                    placeholder="Enter Aadhar number"
-                    value={newVerification.aadhar_number}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        aadhar_number: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.aadhar_number}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.aadhar_number}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Aadhar Number</Form.Label>
+                    <Form.Control
+                      type="number"
+                      className="form-control-lg"
+                      placeholder="Enter Aadhar number"
+                      value={newVerification.aadhar_number}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          aadhar_number: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.aadhar_number}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.aadhar_number}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>PAN Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter PAN number"
-                    value={newVerification.pan_number}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        pan_number: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.pan_number}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.pan_number}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
+                  <Form.Group className="mb-3">
+                    <Form.Label>PAN Number</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter PAN number"
+                      value={newVerification.pan_number}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          pan_number: e.target.value.toUpperCase(),
+                        })
+                      }
+                      isInvalid={!!errors.pan_number}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.pan_number}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
 
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Passport Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter passport number"
-                    value={newVerification.passport_no}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        passport_no: e.target.value,
-                      })
-                    }
-                  />
-                </Form.Group>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Passport Number</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter passport number"
+                      value={newVerification.passport_no}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          passport_no: e.target.value.toUpperCase(),
+                        })
+                      }
+                    />
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Verification Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    className="form-control-lg"
-                    value={newVerification.verification_date}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        verification_date: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.verification_date}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.verification_date}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Verification Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      className="form-control-lg"
+                      value={newVerification.verification_date}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          verification_date: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.verification_date}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.verification_date}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Verified By</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter verified by"
-                    value={newVerification.verified_by}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        verified_by: e.target.value,
-                      })
-                    }
-                    isInvalid={!!errors.verified_by}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.verified_by}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Verified By</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter verified by"
+                      value={newVerification.verified_by}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          verified_by: e.target.value,
+                        })
+                      }
+                      isInvalid={!!errors.verified_by}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.verified_by}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
-                  <select
-                    className="form-control form-control-lg"
-                    value={newVerification.status}
-                    onChange={(e) =>
-                      setNewVerification({
-                        ...newVerification,
-                        status: parseInt(e.target.value),
-                      })
-                    }
-                  >
-                    <option value={1}>Active</option>
-                    <option value={0}>Inactive</option>
-                  </select>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
-        </div>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Status</Form.Label>
+                    <select
+                      className="form-control form-control-lg"
+                      value={newVerification.status}
+                      onChange={(e) =>
+                        setNewVerification({
+                          ...newVerification,
+                          status: parseInt(e.target.value),
+                        })
+                      }
+                    >
+                      <option value={1}>Active</option>
+                      <option value={0}>Inactive</option>
+                    </select>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          </div>
 
-        <div className="thaniya-normal-footer">
-          <button onClick={handleReset} className="s-btn s-btn-light">
-            Reset
-          </button>
-          <button
-            onClick={handleAddVerification}
-            className="s-btn s-btn-grad-danger"
-            disabled={submitting}
-          >
-            {submitting ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              "Save Verification"
-            )}
-          </button>
+          <div className="thaniya-normal-footer">
+            <button onClick={handleReset} className="s-btn s-btn-light">
+              Reset
+            </button>
+            <button
+              onClick={handleAddVerification}
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save Verification"
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // Edit Verification Modal
-const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerifications, verifications }) => {
-  const initialForm = selectedVerification || {
-    employee_id: "",
-    aadhar_number: "",
-    pan_number: "",
-    passport_no: "",
-    verification_date: "",
-    verified_by: "",
-    status: 1,
-  };
+  const EditModal = ({ selectedVerification, showEditModal, closeModal }) => {
+    const [editVerification, setEditVerification] = useState(selectedVerification || {
+      employee_id: "",
+      aadhar_number: "",
+      pan_number: "",
+      passport_no: "",
+      verification_date: "",
+      verified_by: "",
+      status: 1,
+    });
+    const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
-  const [editVerification, setEditVerification] = useState(initialForm);
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [apiError, setApiError] = useState("");
+    useEffect(() => {
+      if (selectedVerification) {
+        setEditVerification(selectedVerification);
+      }
+    }, [selectedVerification]);
 
-  useEffect(() => {
-    if (selectedVerification) {
-      setEditVerification(selectedVerification);
-    }
-  }, [selectedVerification]);
+    const validateForm = (data) => {
+      const newErrors = {};
+      if (!data.employee_id) newErrors.employee_id = "Please enter employee ID";
+      if (!data.aadhar_number) newErrors.aadhar_number = "Please enter Aadhar number";
+      if (!data.pan_number) newErrors.pan_number = "Please enter PAN number";
+      if (!data.verification_date) newErrors.verification_date = "Please select verification date";
+      if (!data.verified_by.trim()) newErrors.verified_by = "Please enter verified by";
 
-  const validateForm = (data) => {
-    const newErrors = {};
-    if (!data.employee_id) newErrors.employee_id = "Please enter employee ID";
-    if (!data.aadhar_number) newErrors.aadhar_number = "Please enter Aadhar number";
-    if (!data.pan_number) newErrors.pan_number = "Please enter PAN number";
-    if (!data.verification_date) newErrors.verification_date = "Please select verification date";
-    if (!data.verified_by.trim()) newErrors.verified_by = "Please enter verified by";
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    };
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    const handleUpdateVerification = async () => {
+      if (!validateForm(editVerification)) return;
 
-  const handleUpdateVerification = async () => {
-    if (!validateForm(editVerification)) return;
+      try {
+        setSubmitting(true);
+        const token = localStorage.getItem("authtoken");
+        await axios.put(
+          `${API_BASE_URL}verification/update/${editVerification.id}`,
+          editVerification,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
-    try {
-      setSubmitting(true);
-       const token = localStorage.getItem("authtoken");
-      await axios.put(
-        `${API_BASE_URL}/verification/update/${editVerification.verification_id}`,
-        editVerification,
-        {
-          headers: { Authorization: token },
-        }
-      );
+        // Refresh the list
+        fetchVerifications();
+        setSuccessMessage("Verification updated successfully!");
+        setTimeout(() => setSuccessMessage(""), 3000);
+        closeModal();
+      } catch (error) {
+        console.error("Error updating verification:", error);
+        setApiError(error.response?.data?.error || "Failed to update verification");
+      } finally {
+        setSubmitting(false);
+      }
+    };
 
-      // update list in parent state
-      setVerifications(
-        verifications.map((v) =>
-          v.verification_id === editVerification.verification_id ? editVerification : v
-        )
-      );
-
-      setSuccessMessage("Verification updated successfully!");
-      setTimeout(() => setSuccessMessage(""), 3000);
+    const handleClose = () => {
       closeModal();
-    } catch (error) {
-      console.error("Error updating verification:", error);
-      setApiError(error.response?.data?.error || "Failed to update verification");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      setErrors({});
+    };
 
-  const handleClose = () => {
-    closeModal();
-    setErrors({});
-  };
+    if (!showEditModal) return null;
 
-  if (!showEditModal) return null;
-
-  return (
-    <div
-      className={`thaniya-normal-overlay ${
-        showEditModal ? "thaniya-overlay-visible" : ""
-      }`}
-    >
-      <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+    return (
       <div
-        className={`thaniya-normal-modal ${
-          showEditModal ? "thaniya-normal-modal-visible" : ""
+        className={`thaniya-normal-overlay ${
+          isAnimating ? "thaniya-overlay-visible" : ""
         }`}
-        style={{ maxWidth: "900px", width: "90%" }}
       >
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Edit Verification</h2>
-          <button onClick={handleClose} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
-        </div>
+        <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
+        <div
+          className={`thaniya-normal-modal ${
+            isAnimating ? "thaniya-normal-modal-visible" : ""
+          }`}
+          style={{ maxWidth: "900px", width: "90%" }}
+        >
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Edit Verification</h2>
+            <button onClick={handleClose} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
 
-        <div className="thaniya-normal-body">
-          <Form>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Employee ID</Form.Label>
-                  <Form.Control
-                    type="number"
-                    className="form-control-lg"
-                    placeholder="Enter employee ID"
-                    value={editVerification.employee_id}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, employee_id: e.target.value })
-                    }
-                    isInvalid={!!errors.employee_id}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.employee_id}
-                  </Form.Control.Feedback>
-                </Form.Group>
+          <div className="thaniya-normal-body">
+            <Form>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Employee ID</Form.Label>
+                    <Form.Control
+                      type="number"
+                      className="form-control-lg"
+                      placeholder="Enter employee ID"
+                      value={editVerification.employee_id}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, employee_id: e.target.value })
+                      }
+                      isInvalid={!!errors.employee_id}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.employee_id}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Aadhar Number</Form.Label>
-                  <Form.Control
-                    type="number"
-                    className="form-control-lg"
-                    placeholder="Enter Aadhar number"
-                    value={editVerification.aadhar_number}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, aadhar_number: e.target.value })
-                    }
-                    isInvalid={!!errors.aadhar_number}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.aadhar_number}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Aadhar Number</Form.Label>
+                    <Form.Control
+                      type="number"
+                      className="form-control-lg"
+                      placeholder="Enter Aadhar number"
+                      value={editVerification.aadhar_number}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, aadhar_number: e.target.value })
+                      }
+                      isInvalid={!!errors.aadhar_number}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.aadhar_number}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>PAN Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter PAN number"
-                    value={editVerification.pan_number}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, pan_number: e.target.value })
-                    }
-                    isInvalid={!!errors.pan_number}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.pan_number}
-                  </Form.Control.Feedback>
-                </Form.Group>
-              </Col>
+                  <Form.Group className="mb-3">
+                    <Form.Label>PAN Number</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter PAN number"
+                      value={editVerification.pan_number}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, pan_number: e.target.value })
+                      }
+                      isInvalid={!!errors.pan_number}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.pan_number}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+                </Col>
 
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Passport Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter passport number"
-                    value={editVerification.passport_no}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, passport_no: e.target.value })
-                    }
-                  />
-                </Form.Group>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Passport Number</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter passport number"
+                      value={editVerification.passport_no}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, passport_no: e.target.value })
+                      }
+                    />
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Verification Date</Form.Label>
-                  <Form.Control
-                    type="date"
-                    className="form-control-lg"
-                    value={editVerification.verification_date}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, verification_date: e.target.value })
-                    }
-                    isInvalid={!!errors.verification_date}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.verification_date}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Verification Date</Form.Label>
+                    <Form.Control
+                      type="date"
+                      className="form-control-lg"
+                      value={editVerification.verification_date}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, verification_date: e.target.value })
+                      }
+                      isInvalid={!!errors.verification_date}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.verification_date}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Verified By</Form.Label>
-                  <Form.Control
-                    type="text"
-                    className="form-control-lg"
-                    placeholder="Enter verified by"
-                    value={editVerification.verified_by}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, verified_by: e.target.value })
-                    }
-                    isInvalid={!!errors.verified_by}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.verified_by}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Verified By</Form.Label>
+                    <Form.Control
+                      type="text"
+                      className="form-control-lg"
+                      placeholder="Enter verified by"
+                      value={editVerification.verified_by}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, verified_by: e.target.value })
+                      }
+                      isInvalid={!!errors.verified_by}
+                    />
+                    <Form.Control.Feedback type="invalid">
+                      {errors.verified_by}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Status</Form.Label>
-                  <select
-                    className="form-control form-control-lg"
-                    value={editVerification.status}
-                    onChange={(e) =>
-                      setEditVerification({ ...editVerification, status: parseInt(e.target.value) })
-                    }
-                  >
-                    <option value={1}>Active</option>
-                    <option value={0}>Inactive</option>
-                  </select>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
-        </div>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Status</Form.Label>
+                    <select
+                      className="form-control form-control-lg"
+                      value={editVerification.status}
+                      onChange={(e) =>
+                        setEditVerification({ ...editVerification, status: parseInt(e.target.value) })
+                      }
+                    >
+                      <option value={1}>Active</option>
+                      <option value={0}>Inactive</option>
+                    </select>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          </div>
 
-        <div className="thaniya-normal-footer">
-          <button onClick={handleClose} className="s-btn s-btn-light">
-            Cancel
-          </button>
-          <button
-            onClick={handleUpdateVerification}
-            className="s-btn s-btn-grad-danger"
-            disabled={submitting}
-          >
-            {submitting ||"Update Verification"}
-          </button>
+          <div className="thaniya-normal-footer">
+            <button onClick={handleClose} className="s-btn s-btn-light">
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateVerification}
+              className="s-btn s-btn-grad-danger"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Updating...
+                </>
+              ) : (
+                "Update Verification"
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
 
   // Delete Confirmation Modal
   const DeleteModal = () => (
@@ -826,6 +757,7 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
                     <tr>
                       <th>#</th>
                       <th>Employee ID</th>
+                      <th>Employee Name</th>
                       <th>Aadhar Number</th>
                       <th>PAN Number</th>
                       <th>Passport No.</th>
@@ -841,6 +773,7 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
                         <tr key={verification.id}>
                           <th>{verification.id}</th>
                           <td>{verification.employee_id}</td>
+                          <td>{verification.full_name || "N/A"}</td>
                           <td>{verification.aadhar_number || "N/A"}</td>
                           <td>{verification.pan_number || "N/A"}</td>
                           <td>{verification.passport_no || "N/A"}</td>
@@ -848,11 +781,7 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
                           <td>{verification.verified_by || "N/A"}</td>
                           <td>
                             <Badge
-                              variant={
-                                verification.status === 1
-                                  ? "success light"
-                                  : "danger light"
-                              }
+                              bg={verification.status === 1 ? "success" : "danger"}
                             >
                               {verification.status === 1 ? "Verified" : "Pending"}
                             </Badge>
@@ -877,7 +806,7 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="9" className="text-center py-4">
+                        <td colSpan="10" className="text-center py-4">
                           {searchTerm ? 'No verification records found matching your search.' : 'No verification records available.'}
                         </td>
                       </tr>
@@ -890,38 +819,25 @@ const EditModal = ({ selectedVerification, showEditModal, closeModal, setVerific
         </Col>
       </Row>
 
-     {showAddModal && (
-  <AddModal
-    showAddModal={showAddModal}
-    closeModal={closeModal}
-    setVerifications={setVerifications}
-    verifications={verifications}
-    setSuccessMessage={setSuccessMessage}
-    setApiError={setApiError}
-    isAnimating={isAnimating}
-  />
-)}
+      {showAddModal && (
+        <AddModal
+          showAddModal={showAddModal}
+          closeModal={closeModal}
+          employees={employees}
+        />
+      )}
 
-{showEditModal && (
-  <EditModal
-    selectedVerification={selectedVerification}
-    showEditModal={showEditModal}
-    closeModal={closeModal}
-    setVerifications={setVerifications}
-    verifications={verifications}
-  />
-)}
+      {showEditModal && (
+        <EditModal
+          selectedVerification={selectedVerification}
+          showEditModal={showEditModal}
+          closeModal={closeModal}
+        />
+      )}
 
-{showDeleteModal && (
-  <DeleteModal
-    showDeleteModal={showDeleteModal}
-    closeModal={closeModal}
-    selectedVerification={selectedVerification}
-    handleDelete={handleDelete}
-    isAnimating={isAnimating}
-  />
-)}
-
+      {showDeleteModal && (
+        <DeleteModal />
+      )}
     </Fragment>
   );
 };

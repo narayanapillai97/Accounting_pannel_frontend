@@ -21,6 +21,22 @@ const BankDetails = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5008/";
 
+  // Get authentication token
+  const getAuthToken = () => {
+    return localStorage.getItem("authtoken");
+  };
+
+  // Axios instance with auth header
+  const axiosWithAuth = useMemo(() => {
+    const token = getAuthToken();
+    return axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+  }, [API_BASE_URL]);
+
   // Fetch bank details on component mount
   useEffect(() => {
     fetchBankDetails();
@@ -29,12 +45,7 @@ const BankDetails = () => {
   const fetchBankDetails = async () => {
     try {
       setLoading(true);
-       const token = localStorage.getItem("authtoken");
-      const response = await axios.get(`${API_BASE_URL}bankdetails/get`,{
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
+      const response = await axiosWithAuth.get("bankdetails/get");
       setBankDetails(response.data);
       setErrorMessage("");
     } catch (error) {
@@ -123,7 +134,7 @@ const BankDetails = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`${API_BASE_URL}bankdetails/delete/${selectedBankDetail.id}`);
+      await axiosWithAuth.delete(`bankdetails/delete/${selectedBankDetail.id}`);
       setBankDetails(bankDetails.filter(detail => detail.id !== selectedBankDetail.id));
       closeModal();
     } catch (error) {
@@ -136,7 +147,7 @@ const BankDetails = () => {
     if (!validateForm(newBankDetail)) return;
     
     try {
-      const response = await axios.post(`${API_BASE_URL}/bank-details/post`, newBankDetail);
+      await axiosWithAuth.post("bankdetails/post", newBankDetail);
       // Refetch to get the complete data including employee information
       await fetchBankDetails();
       closeModal();
@@ -150,7 +161,7 @@ const BankDetails = () => {
     if (!validateForm(selectedBankDetail)) return;
     
     try {
-      await axios.put(`${API_BASE_URL}bankdetails/update/${selectedBankDetail.id}`, selectedBankDetail);
+      await axiosWithAuth.put(`bankdetails/update/${selectedBankDetail.id}`, selectedBankDetail);
       setBankDetails(bankDetails.map(b => 
         b.id === selectedBankDetail.id ? selectedBankDetail : b
       ));
@@ -193,7 +204,7 @@ const BankDetails = () => {
       
       if (Object.keys(newErrors).length === 0) {
         try {
-          await axios.post(`${API_BASE_URL}bankdetails/post`, localBankDetail);
+          await axiosWithAuth.post("bankdetails/post", localBankDetail);
           await fetchBankDetails();
           handleReset();
           closeModal();

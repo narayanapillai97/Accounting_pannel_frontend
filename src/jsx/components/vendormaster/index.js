@@ -104,7 +104,7 @@ const VendorMaster = () => {
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authtoken");
       await axios.delete(`${API_BASE_URL}/vendormaster/delete/${selectedVendor.vendor_id}`, {
         headers: {
             Authorization: `Bearer ${token}`
@@ -165,7 +165,7 @@ const VendorMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authtoken");
         const response = await axios.post(`${API_BASE_URL}/vendormaster/post`, newVendor, {
           headers: {
              Authorization: `Bearer ${token}`
@@ -422,7 +422,7 @@ const VendorMaster = () => {
       
       try {
         setSubmitting(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authtoken");
         await axios.put(`${API_BASE_URL}/vendormaster/update/${editVendor.vendor_id}`, editVendor, {
           headers: {
              Authorization: `Bearer ${token}`

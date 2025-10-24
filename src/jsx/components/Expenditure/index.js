@@ -26,7 +26,9 @@ import {
   Eye,
   Download,
   Search,
-  RefreshCw
+  RefreshCw,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -47,14 +49,14 @@ const ExpenditureMaster = () => {
   const [showBillModal, setShowBillModal] = useState(false);
   const [billData, setBillData] = useState(null);
   const [activeTab, setActiveTab] = useState("records");
-  const [showFileModal, setShowFileModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchTermFiles, setSearchTermFiles] = useState("");
   const [loading, setLoading] = useState(false);
   const [expenditures, setExpenditures] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [apiError, setApiError] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [newExpenditure, setNewExpenditure] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -67,7 +69,7 @@ const ExpenditureMaster = () => {
     payment_mode_id: "",
     bill_id: "",
     status: 1,
-    files: [],
+    image: null
   });
 
   // API Calls for Dropdown Data
@@ -176,11 +178,8 @@ const ExpenditureMaster = () => {
       }
       
       const data = await response.json();
-      const expenditureData = data.data || data || [];
-      setExpenditures(expenditureData.map((item) => ({
-        ...item,
-        files: item.files || []
-      })));
+      const expenditureData = Array.isArray(data) ? data : (data.data || []);
+      setExpenditures(expenditureData);
     } catch (error) {
       console.error('Error fetching expenditures:', error);
       setApiError('Failed to load expenditure records');
@@ -192,17 +191,28 @@ const ExpenditureMaster = () => {
   const addExpenditure = async (expenditureData) => {
     try {
       const token = localStorage.getItem('authtoken');
+      const formData = new FormData();
+      
+      // Append all fields to formData
+      Object.keys(expenditureData).forEach(key => {
+        if (key === 'image' && expenditureData[key]) {
+          formData.append('image', expenditureData[key]);
+        } else if (expenditureData[key] !== null && expenditureData[key] !== undefined) {
+          formData.append(key, expenditureData[key]);
+        }
+      });
+
       const response = await fetch(`${API_BASE_URL}/expenditure/post`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(expenditureData)
+        body: formData
       });
       
       if (!response.ok) {
-        throw new Error('Failed to add expenditure');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add expenditure');
       }
 
       setRefreshTrigger(prev => prev + 1);
@@ -216,17 +226,28 @@ const ExpenditureMaster = () => {
   const updateExpenditure = async (id, expenditureData) => {
     try {
       const token = localStorage.getItem('authtoken');
+      const formData = new FormData();
+      
+      // Append all fields to formData
+      Object.keys(expenditureData).forEach(key => {
+        if (key === 'image' && expenditureData[key]) {
+          formData.append('image', expenditureData[key]);
+        } else if (expenditureData[key] !== null && expenditureData[key] !== undefined) {
+          formData.append(key, expenditureData[key]);
+        }
+      });
+
       const response = await fetch(`${API_BASE_URL}/expenditure/update/${id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(expenditureData)
+        body: formData
       });
       
       if (!response.ok) {
-        throw new Error('Failed to update expenditure');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update expenditure');
       }
       
       return await response.json();
@@ -268,31 +289,10 @@ const ExpenditureMaster = () => {
         fetchVariants(),
         fetchPaymentModes()
       ]);
-      
-      // Load files from localStorage
-      const savedFiles = localStorage.getItem('expenditureFiles');
-      if (savedFiles) {
-        const filesData = JSON.parse(savedFiles);
-        setExpenditures(prevExpenditures => 
-          prevExpenditures.map(expenditure => ({
-            ...expenditure,
-            files: filesData[expenditure.id] || []
-          }))
-        );
-      }
     };
 
     loadData();
   }, [refreshTrigger]);
-
-  // Save files to localStorage when they change
-  useEffect(() => {
-    const filesData = {};
-    expenditures.forEach(expenditure => {
-      filesData[expenditure.id] = expenditure.files;
-    });
-    localStorage.setItem('expenditureFiles', JSON.stringify(filesData));
-  }, [expenditures]);
 
   const getCategoryName = (id) => {
     if (!id) return "N/A";
@@ -307,20 +307,36 @@ const ExpenditureMaster = () => {
   };
 
   // Filter expenditure records based on search term
-  const filteredExpenditures = useMemo(() => {
-    if (!searchTerm) return expenditures;
+const filteredExpenditures = useMemo(() => {
+  if (!searchTerm) return expenditures;
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return expenditures.filter(expenditure => {
+    // Safely handle all fields that might be null/undefined or non-strings
+    const payeeName = String(expenditure.payee_name || '').toLowerCase();
+    const description = String(expenditure.description || '').toLowerCase();
+    const billId = String(expenditure.bill_id || '').toLowerCase();
+    const amount = String(expenditure.amount || '').toLowerCase();
+    const date = String(expenditure.date || '').toLowerCase();
     
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return expenditures.filter(expenditure => 
-      expenditure.payee_name?.toLowerCase().includes(lowerSearchTerm) ||
-      expenditure.description?.toLowerCase().includes(lowerSearchTerm) ||
-      getCategoryName(expenditure.category_id)?.toLowerCase().includes(lowerSearchTerm) ||
-      getPaymentModeName(expenditure.payment_mode_id)?.toLowerCase().includes(lowerSearchTerm) ||
-      expenditure.amount?.toString().includes(lowerSearchTerm) ||
-      expenditure.date?.includes(lowerSearchTerm) ||
-      expenditure.bill_id?.toLowerCase().includes(lowerSearchTerm)
+    // Get category and payment mode names safely
+    const category = categories.find(c => c.id === expenditure.category_id);
+    const paymentMode = paymentModes.find(p => p.id === expenditure.payment_mode_id);
+    
+    const categoryName = category ? String(category.category_name || category.name || '').toLowerCase() : '';
+    const paymentModeName = paymentMode ? String(paymentMode.payment_method || paymentMode.name || '').toLowerCase() : '';
+    
+    return (
+      payeeName.includes(lowerSearchTerm) ||
+      description.includes(lowerSearchTerm) ||
+      categoryName.includes(lowerSearchTerm) ||
+      paymentModeName.includes(lowerSearchTerm) ||
+      amount.includes(lowerSearchTerm) ||
+      date.includes(lowerSearchTerm) ||
+      billId.includes(lowerSearchTerm)
     );
-  }, [expenditures, searchTerm]);
+  });
+}, [expenditures, searchTerm, categories, paymentModes]);
 
   const validateForm = (expenditureData) => {
     const newErrors = {};
@@ -350,7 +366,7 @@ const ExpenditureMaster = () => {
       payment_mode_id: "",
       bill_id: "",
       status: 1,
-      files: [],
+      image: null
     });
     setErrors({});
     setShowAddModal(true);
@@ -395,10 +411,13 @@ const ExpenditureMaster = () => {
     if (!validateForm(expenditureData)) return;
 
     try {
+      setUploadingImage(true);
       await addExpenditure(expenditureData);
       closeModal();
     } catch (error) {
-      alert('Failed to add expenditure record');
+      alert(error.message || 'Failed to add expenditure record');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -406,13 +425,14 @@ const ExpenditureMaster = () => {
     if (!validateForm(selectedExpenditure)) return;
 
     try {
+      setUploadingImage(true);
       await updateExpenditure(selectedExpenditure.id, selectedExpenditure);
-      setExpenditures(
-        expenditures.map((i) => (i.id === selectedExpenditure.id ? selectedExpenditure : i))
-      );
+      setRefreshTrigger(prev => prev + 1);
       closeModal();
     } catch (error) {
-      alert('Failed to update expenditure record');
+      alert(error.message || 'Failed to update expenditure record');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -430,57 +450,57 @@ const ExpenditureMaster = () => {
     }, 300);
   };
 
-  const handleFileUpload = (e, expenditureId = null) => {
-    const files = Array.from(e.target.files);
-    
-    if (expenditureId) {
-      setExpenditures(prevExpenditures => 
-        prevExpenditures.map(expenditure => 
-          expenditure.id === expenditureId 
-            ? { ...expenditure, files: [...expenditure.files, ...files] }
-            : expenditure
-        )
-      );
+  const handleImageUpload = (e, isEdit = false) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file (JPEG, PNG, GIF, etc.)');
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      if (isEdit) {
+        setSelectedExpenditure(prev => ({
+          ...prev,
+          image: file
+        }));
+      } else {
+        setNewExpenditure(prev => ({
+          ...prev,
+          image: file
+        }));
+      }
+    }
+  };
+
+  const removeImage = (isEdit = false) => {
+    if (isEdit) {
+      setSelectedExpenditure(prev => ({
+        ...prev,
+        image: null
+      }));
     } else {
       setNewExpenditure(prev => ({
         ...prev,
-        files: [...prev.files, ...files]
+        image: null
       }));
     }
   };
 
-  const removeFile = (expenditureId, fileIndex) => {
-    setExpenditures(prevExpenditures => 
-      prevExpenditures.map(expenditure => 
-        expenditure.id === expenditureId 
-          ? { 
-              ...expenditure, 
-              files: expenditure.files.filter((_, index) => index !== fileIndex) 
-            }
-          : expenditure
-      )
-    );
+  const openImageModal = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setShowImageModal(true);
   };
 
-  const openFileModal = (file) => {
-    setSelectedFile(file);
-    setShowFileModal(true);
-  };
-
-  const closeFileModal = () => {
-    setShowFileModal(false);
-    setSelectedFile(null);
-  };
-
-  const downloadFile = (file) => {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImage(null);
   };
 
   const downloadPdf = () => {
@@ -551,8 +571,8 @@ const ExpenditureMaster = () => {
     doc.setFontSize(10);
     doc.text(`Payment Method: ${getPaymentModeName(billData?.payment_mode_id)}`, margin, finalY);
     
-    if (billData?.bill_url) {
-      doc.text("Original bill is attached to this record", margin, finalY + 5);
+    if (billData?.image_url) {
+      doc.text("Bill image is attached to this record", margin, finalY + 5);
     }
     
     doc.text("Thank you for your business!", pageWidth / 2, finalY + 15, { align: "center" });
@@ -560,13 +580,13 @@ const ExpenditureMaster = () => {
     doc.save(`Expense_${billData?.bill_id || billData?.id || "receipt"}.pdf`);
   };
 
-  // Bill Modal Component
+  // Bill Modal Component - Now Scrollable
   const BillModalComponent = () => (
     <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
       <div className="thaniya-normal-backdrop" onClick={closeBillModal}></div>
       <div
         className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`}
-        style={{ maxWidth: "800px" }}
+        style={{ maxWidth: "800px", maxHeight: "90vh" }}
       >
         <div className="thaniya-normal-header">
           <h2 className="thaniya-normal-title">Expense Receipt</h2>
@@ -574,7 +594,7 @@ const ExpenditureMaster = () => {
             <X size={20} />
           </button>
         </div>
-        <div className="thaniya-normal-body">
+        <div className="thaniya-normal-body modal-scrollable">
           <div className="bill-container">
             <div className="bill-header text-center mb-4">
               <h2>EXPENSE RECEIPT</h2>
@@ -617,22 +637,28 @@ const ExpenditureMaster = () => {
               </tbody>
             </Table>
 
-            {billData?.bill_url && (
+            {billData?.image_url && (
               <div className="mb-4">
-                <h5>Attached Bill:</h5>
-                {billData.bill_url.match(/\.(jpeg|jpg|gif|png)$/) ? (
-                  <Image src={billData.bill_url} fluid thumbnail />
-                ) : (
-                  <a 
-                    href={billData.bill_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                  >
-                    <FileText size={16} className="me-2" />
-                    View Original Bill
-                  </a>
-                )}
+                <h5>Attached Bill Image:</h5>
+                <div className="text-center">
+                  <Image 
+                    src={billData.image_url} 
+                    fluid 
+                    thumbnail 
+                    style={{ maxHeight: '300px', cursor: 'pointer' }}
+                    onClick={() => openImageModal(billData.image_url)}
+                  />
+                  <div className="mt-2">
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm"
+                      onClick={() => openImageModal(billData.image_url)}
+                    >
+                      <Eye size={16} className="me-1" />
+                      View Full Image
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -655,76 +681,49 @@ const ExpenditureMaster = () => {
     </div>
   );
 
-  // File Preview Modal Component
-  const FileModalComponent = () => {
-    if (!selectedFile) return null;
-
-    const isImage = selectedFile.type.startsWith('image/');
-    const isPDF = selectedFile.type === 'application/pdf';
+  // Image Preview Modal Component - Now Scrollable
+  const ImageModalComponent = () => {
+    if (!selectedImage) return null;
 
     return (
-      <div className={`thaniya-normal-overlay ${showFileModal ? "thaniya-overlay-visible" : ""}`}>
-        <div className="thaniya-normal-backdrop" onClick={closeFileModal}></div>
+      <div className={`thaniya-normal-overlay ${showImageModal ? "thaniya-overlay-visible" : ""}`}>
+        <div className="thaniya-normal-backdrop" onClick={closeImageModal}></div>
         <div
-          className={`thaniya-normal-modal ${showFileModal ? "thaniya-normal-modal-visible" : ""}`}
-          style={{ maxWidth: "800px", width: "90%" }}
+          className={`thaniya-normal-modal ${showImageModal ? "thaniya-normal-modal-visible" : ""}`}
+          style={{ maxWidth: "90%", maxHeight: "90%" }}
         >
           <div className="thaniya-normal-header">
-            <h2 className="thaniya-normal-title">File Preview</h2>
-            <button onClick={closeFileModal} className="thaniya-normal-close">
+            <h2 className="thaniya-normal-title">Image Preview</h2>
+            <button onClick={closeImageModal} className="thaniya-normal-close">
               <X size={20} />
             </button>
           </div>
-          <div className="thaniya-normal-body">
-            <div className="text-center">
-              <h5>{selectedFile.name}</h5>
-              
-              {isImage ? (
-                <img 
-                  src={URL.createObjectURL(selectedFile)} 
-                  alt="Preview" 
-                  style={{ maxWidth: '100%', maxHeight: '500px' }}
-                />
-              ) : isPDF ? (
-                <iframe 
-                  src={URL.createObjectURL(selectedFile)} 
-                  width="100%" 
-                  height="500px" 
-                  title="PDF Preview"
-                />
-              ) : (
-                <div className="alert alert-info mt-3">
-                  <FileText size={48} className="mb-2" />
-                  <p>No preview available for this file type.</p>
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => downloadFile(selectedFile)}
-                  >
-                    <Download size={16} className="me-2" />
-                    Download File
-                  </button>
-                </div>
-              )}
-            </div>
+          <div className="thaniya-normal-body modal-scrollable text-center">
+            <img 
+              src={selectedImage} 
+              alt="Preview" 
+              style={{ maxWidth: '100%', maxHeight: '70vh' }}
+            />
           </div>
           <div className="thaniya-normal-footer">
-            <button onClick={closeFileModal} className="s-btn s-btn-light">
+            <button onClick={closeImageModal} className="s-btn s-btn-light">
               Close
             </button>
-            <button 
-              onClick={() => downloadFile(selectedFile)} 
+            <a 
+              href={selectedImage} 
+              download 
               className="s-btn s-btn-grad-danger"
             >
               <Download size={16} className="me-2" />
               Download
-            </button>
+            </a>
           </div>
         </div>
       </div>
     );
   };
 
-  // Add Expenditure Modal Component
+  // Add Expenditure Modal Component - Now Scrollable
   const AddModal = () => {
     const initialForm = {
       date: new Date().toISOString().split("T")[0],
@@ -737,7 +736,7 @@ const ExpenditureMaster = () => {
       payment_mode_id: "",
       bill_id: "",
       status: 1,
-      files: [],
+      image: null,
     };
 
     const [localExpenditure, setLocalExpenditure] = useState(initialForm);
@@ -764,18 +763,28 @@ const ExpenditureMaster = () => {
       }
     };
 
-    const handleFileUpload = (e) => {
-      const files = Array.from(e.target.files);
-      setLocalExpenditure(prev => ({
-        ...prev,
-        files: [...prev.files, ...files]
-      }));
+    const handleImageUpload = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          alert('Please select an image file (JPEG, PNG, GIF, etc.)');
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Image size should be less than 5MB');
+          return;
+        }
+        setLocalExpenditure(prev => ({
+          ...prev,
+          image: file
+        }));
+      }
     };
 
-    const removeFile = (fileIndex) => {
+    const removeImage = () => {
       setLocalExpenditure(prev => ({
         ...prev,
-        files: prev.files.filter((_, index) => index !== fileIndex)
+        image: null
       }));
     };
 
@@ -783,7 +792,7 @@ const ExpenditureMaster = () => {
       <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
         <div className="thaniya-normal-backdrop" onClick={handleClose}></div>
 
-        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%" }}>
+        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "700px", width: "90%", maxHeight: "90vh" }}>
           <div className="thaniya-normal-header">
             <h2 className="thaniya-normal-title">Add Expenditure Record</h2>
             <button onClick={handleClose} className="thaniya-normal-close">
@@ -791,7 +800,7 @@ const ExpenditureMaster = () => {
             </button>
           </div>
 
-          <div className="thaniya-normal-body">
+          <div className="thaniya-normal-body modal-scrollable">
             {apiError && <Alert variant="danger">{apiError}</Alert>}
             <Form>
               <Row>
@@ -837,40 +846,36 @@ const ExpenditureMaster = () => {
                     </Form.Select>
                     <Form.Control.Feedback type="invalid">{localErrors.category_id}</Form.Control.Feedback>
                   </Form.Group>
-<Form.Group className="mb-3">
-  <Form.Label>Subcategory</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={localExpenditure.subcategory_id}
-    onChange={(e) =>
-      setLocalExpenditure({
-        ...localExpenditure,
-        subcategory_id: e.target.value,
-        variant_id: "",
-      })
-    }
-  >
-    <option value="">Select Subcategory</option>
-    {(() => {
-      // Debug logs
-      console.log("Subcategories:", subcategories);
-      console.log("Selected Category ID:", localExpenditure.category_id);
 
-      const categoryId = parseInt(localExpenditure.category_id, 10);
-      return subcategories
-        .filter((sc) => {
-          if (!categoryId || isNaN(categoryId)) return false;
-          return sc.main_category_id === categoryId;
-        })
-        .map((sc) => (
-          <option key={sc.id} value={sc.id}>
-            {sc.sub_category_name}
-          </option>
-        ));
-    })()}
-  </Form.Select>
-</Form.Group>
-
+                  <Form.Group className="mb-3">
+                    <Form.Label>Subcategory</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={localExpenditure.subcategory_id}
+                      onChange={(e) =>
+                        setLocalExpenditure({
+                          ...localExpenditure,
+                          subcategory_id: e.target.value,
+                          variant_id: "",
+                        })
+                      }
+                    >
+                      <option value="">Select Subcategory</option>
+                      {(() => {
+                        const categoryId = parseInt(localExpenditure.category_id, 10);
+                        return subcategories
+                          .filter((sc) => {
+                            if (!categoryId || isNaN(categoryId)) return false;
+                            return sc.main_category_id === categoryId;
+                          })
+                          .map((sc) => (
+                            <option key={sc.id} value={sc.id}>
+                              {sc.sub_category_name}
+                            </option>
+                          ));
+                      })()}
+                    </Form.Select>
+                  </Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Variant</Form.Label>
@@ -960,37 +965,41 @@ const ExpenditureMaster = () => {
                   </Form.Group>
 
                   <Form.Group className="mb-3">
-                    <Form.Label>Attach Files</Form.Label>
+                    <Form.Label>Upload Bill Image</Form.Label>
                     <Form.Control
                       type="file"
                       className="form-control-lg"
-                      multiple
-                      onChange={handleFileUpload}
+                      accept="image/*"
+                      onChange={handleImageUpload}
                     />
                     <Form.Text className="text-muted">
-                      You can attach multiple files (bills, receipts, etc.)
+                      Upload bill/receipt image (JPEG, PNG, GIF - Max 5MB)
                     </Form.Text>
                   </Form.Group>
 
-                  {localExpenditure.files.length > 0 && (
+                  {localExpenditure.image && (
                     <div className="mb-3">
-                      <h6>Attached Files:</h6>
-                      <ul className="list-group">
-                        {localExpenditure.files.map((file, index) => (
-                          <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                            <span className="text-truncate" style={{maxWidth: '70%'}}>
-                              <Paperclip size={14} className="me-2" />
-                              {file.name}
-                            </span>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeFile(index)}
-                            >
-                              <X size={14} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                      <h6>Selected Image:</h6>
+                      <div className="d-flex align-items-center border rounded p-2">
+                        <ImageIcon size={24} className="me-2 text-primary" />
+                        <span className="flex-grow-1 text-truncate">
+                          {localExpenditure.image.name}
+                        </span>
+                        <button 
+                          className="btn btn-sm btn-outline-danger ms-2"
+                          onClick={removeImage}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <div className="mt-2 text-center">
+                        <Image 
+                          src={URL.createObjectURL(localExpenditure.image)} 
+                          thumbnail 
+                          style={{ maxHeight: '150px' }}
+                          onLoad={(e) => URL.revokeObjectURL(e.target.src)}
+                        />
+                      </div>
                     </div>
                   )}
                 </Col>
@@ -1002,8 +1011,19 @@ const ExpenditureMaster = () => {
             <button onClick={handleReset} className="s-btn s-btn-light">
               Reset
             </button>
-            <button onClick={handleAdd} className="s-btn s-btn-grad-danger">
-              Save Expenditure
+            <button 
+              onClick={handleAdd} 
+              className="s-btn s-btn-grad-danger"
+              disabled={uploadingImage}
+            >
+              {uploadingImage ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Uploading...
+                </>
+              ) : (
+                'Save Expenditure'
+              )}
             </button>
           </div>
         </div>
@@ -1011,317 +1031,364 @@ const ExpenditureMaster = () => {
     );
   };
 
-  // Edit Expenditure Modal Component
-  const EditModal = () => (
-    <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
-      <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
-      <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "900px", width: "90%" }}>
-        <div className="thaniya-normal-header">
-          <h2 className="thaniya-normal-title">Edit Expenditure Record</h2>
-          <button onClick={closeModal} className="thaniya-normal-close">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="thaniya-normal-body">
-          {apiError && <Alert variant="danger">{apiError}</Alert>}
-          <Form>
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Date</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <Calendar size={16} />
-                    </span>
-                    <Form.Control
-                      type="date"
-                      className="form-control-lg"
-                      value={selectedExpenditure?.date || ""}
-                      onChange={(e) =>
-                        setSelectedExpenditure({
-                          ...selectedExpenditure,
-                          date: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.date}
-                    />
-                  </div>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.date}
-                  </Form.Control.Feedback>
-                </Form.Group>
+  // Edit Expenditure Modal Component - Now Scrollable
+  const EditModal = () => {
+    const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Category</Form.Label>
-                  <Form.Select
-                    className="form-control-lg"
-                    value={selectedExpenditure?.category_id || ""}
-                    onChange={(e) =>
-                      setSelectedExpenditure({
-                        ...selectedExpenditure,
-                        category_id: e.target.value,
-                        subcategory_id: "",
-                        variant_id: "",
-                      })
-                    }
-                    isInvalid={!!errors.category_id}
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.category_name || category.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.category_id}
-                  </Form.Control.Feedback>
-                </Form.Group>
+    useEffect(() => {
+      return () => {
+        if (imagePreviewUrl) {
+          URL.revokeObjectURL(imagePreviewUrl);
+        }
+      };
+    }, [imagePreviewUrl]);
 
-             <Form.Group className="mb-3">
-  <Form.Label>Subcategory</Form.Label>
-  <Form.Select
-    className="form-control-lg"
-    value={selectedExpenditure?.subcategory_id || ""}
-    onChange={(e) =>
-      setSelectedExpenditure({
-        ...selectedExpenditure,
-        subcategory_id: e.target.value,
-        variant_id: "",
-      })
-    }
-  >
-    <option value="">Select Subcategory</option>
-    {(() => {
-      // Debug logs
-      console.log("Subcategories:", subcategories);
-      console.log("Selected Category ID (Edit):", selectedExpenditure?.category_id);
+    useEffect(() => {
+      if (selectedExpenditure?.image instanceof File) {
+        const url = URL.createObjectURL(selectedExpenditure.image);
+        setImagePreviewUrl(url);
+        return () => URL.revokeObjectURL(url);
+      } else {
+        setImagePreviewUrl(null);
+      }
+    }, [selectedExpenditure?.image]);
 
-      const categoryId = parseInt(selectedExpenditure?.category_id, 10);
-      return subcategories
-        .filter((sc) => {
-          if (!categoryId || isNaN(categoryId)) return false;
-          return sc.main_category_id === categoryId;
-        })
-        .map((sc) => (
-          <option key={sc.id} value={sc.id}>
-            {sc.sub_category_name}
-          </option>
-        ));
-    })()}
-  </Form.Select>
-</Form.Group>
+    return (
+      <div className={`thaniya-normal-overlay ${isAnimating ? "thaniya-overlay-visible" : ""}`}>
+        <div className="thaniya-normal-backdrop" onClick={closeModal}></div>
+        <div className={`thaniya-normal-modal ${isAnimating ? "thaniya-normal-modal-visible" : ""}`} style={{ maxWidth: "900px", width: "90%", maxHeight: "90vh" }}>
+          <div className="thaniya-normal-header">
+            <h2 className="thaniya-normal-title">Edit Expenditure Record</h2>
+            <button onClick={closeModal} className="thaniya-normal-close">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="thaniya-normal-body modal-scrollable">
+            {apiError && <Alert variant="danger">{apiError}</Alert>}
+            <Form>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Date</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <Calendar size={16} />
+                      </span>
+                      <Form.Control
+                        type="date"
+                        className="form-control-lg"
+                        value={selectedExpenditure?.date || ""}
+                        onChange={(e) =>
+                          setSelectedExpenditure({
+                            ...selectedExpenditure,
+                            date: e.target.value,
+                          })
+                        }
+                        isInvalid={!!errors.date}
+                      />
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.date}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Variant</Form.Label>
-                  <Form.Select
-                    className="form-control-lg"
-                    value={selectedExpenditure?.variant_id || ""}
-                    onChange={(e) =>
-                      setSelectedExpenditure({
-                        ...selectedExpenditure,
-                        variant_id: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select Variant</option>
-                    {variants.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.variant_name} {v.option_values ? `- ${v.option_values}` : ""}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Description</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    className="form-control-lg"
-                    placeholder="Enter description"
-                    value={selectedExpenditure?.description || ""}
-                    onChange={(e) =>
-                      setSelectedExpenditure({
-                        ...selectedExpenditure,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Payee Name</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <User size={16} />
-                    </span>
-                    <Form.Control
-                      type="text"
-                      className="form-control-lg"
-                      placeholder="Enter payee name"
-                      value={selectedExpenditure?.payee_name || ""}
-                      onChange={(e) =>
-                        setSelectedExpenditure({
-                          ...selectedExpenditure,
-                          payee_name: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.payee_name}
-                    />
-                  </div>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.payee_name}
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Amount</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <DollarSign size={16} />
-                    </span>
-                    <Form.Control
-                      type="number"
-                      className="form-control-lg"
-                      placeholder="Enter amount"
-                      value={selectedExpenditure?.amount || ""}
-                      onChange={(e) =>
-                        setSelectedExpenditure({
-                          ...selectedExpenditure,
-                          amount: e.target.value,
-                        })
-                      }
-                      isInvalid={!!errors.amount}
-                    />
-                  </div>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.amount}
-                  </Form.Control.Feedback>
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Payment Mode</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <CreditCard size={16} />
-                    </span>
+                  <Form.Group className="mb-3">
+                    <Form.Label>Category</Form.Label>
                     <Form.Select
                       className="form-control-lg"
-                      value={selectedExpenditure?.payment_mode_id || ""}
+                      value={selectedExpenditure?.category_id || ""}
                       onChange={(e) =>
                         setSelectedExpenditure({
                           ...selectedExpenditure,
-                          payment_mode_id: e.target.value,
+                          category_id: e.target.value,
+                          subcategory_id: "",
+                          variant_id: "",
                         })
                       }
-                      isInvalid={!!errors.payment_mode_id}
+                      isInvalid={!!errors.category_id}
                     >
-                      <option value="">Select Payment Mode</option>
-                      {paymentModes.map((mode) => (
-                        <option key={mode.id} value={mode.id}>
-                          {mode.payment_method || mode.name}
+                      <option value="">Select Category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.category_name || category.name}
                         </option>
                       ))}
                     </Form.Select>
-                  </div>
-                  <Form.Control.Feedback type="invalid">
-                    {errors.payment_mode_id}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.category_id}
+                    </Form.Control.Feedback>
+                  </Form.Group>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Bill/Receipt ID</Form.Label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <FileText size={16} />
-                    </span>
-                    <Form.Control
-                      type="text"
+                  <Form.Group className="mb-3">
+                    <Form.Label>Subcategory</Form.Label>
+                    <Form.Select
                       className="form-control-lg"
-                      placeholder="Enter bill/receipt ID"
-                      value={selectedExpenditure?.bill_id || ""}
+                      value={selectedExpenditure?.subcategory_id || ""}
                       onChange={(e) =>
                         setSelectedExpenditure({
                           ...selectedExpenditure,
-                          bill_id: e.target.value,
+                          subcategory_id: e.target.value,
+                          variant_id: "",
+                        })
+                      }
+                    >
+                      <option value="">Select Subcategory</option>
+                      {(() => {
+                        const categoryId = parseInt(selectedExpenditure?.category_id, 10);
+                        return subcategories
+                          .filter((sc) => {
+                            if (!categoryId || isNaN(categoryId)) return false;
+                            return sc.main_category_id === categoryId;
+                          })
+                          .map((sc) => (
+                            <option key={sc.id} value={sc.id}>
+                              {sc.sub_category_name}
+                            </option>
+                          ));
+                      })()}
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Variant</Form.Label>
+                    <Form.Select
+                      className="form-control-lg"
+                      value={selectedExpenditure?.variant_id || ""}
+                      onChange={(e) =>
+                        setSelectedExpenditure({
+                          ...selectedExpenditure,
+                          variant_id: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Select Variant</option>
+                      {variants.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {v.variant_name} {v.option_values ? `- ${v.option_values}` : ""}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Description</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={2}
+                      className="form-control-lg"
+                      placeholder="Enter description"
+                      value={selectedExpenditure?.description || ""}
+                      onChange={(e) =>
+                        setSelectedExpenditure({
+                          ...selectedExpenditure,
+                          description: e.target.value,
                         })
                       }
                     />
-                  </div>
-                </Form.Group>
+                  </Form.Group>
+                </Col>
 
-                <Form.Group className="mb-3">
-                  <Form.Label>Attach More Files</Form.Label>
-                  <Form.Control
-                    type="file"
-                    className="form-control-lg"
-                    multiple
-                    onChange={(e) => handleFileUpload(e, selectedExpenditure?.id)}
-                  />
-                </Form.Group>
-
-                {selectedExpenditure?.files && selectedExpenditure.files.length > 0 && (
+                <Col md={6}>
                   <Form.Group className="mb-3">
-                    <Form.Label>Attached Files</Form.Label>
-                    <div className="list-group">
-                      {selectedExpenditure.files.map((file, index) => (
-                        <div key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                          <div className="d-flex align-items-center">
-                            <Paperclip size={14} className="me-2" />
-                            <span className="text-truncate" style={{maxWidth: '150px'}}>
-                              {file.name}
-                            </span>
-                          </div>
-                          <div>
-                            <button 
-                              className="btn btn-sm btn-outline-primary me-1"
-                              onClick={() => openFileModal(file)}
-                              title="View"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button 
-                              className="btn btn-sm btn-outline-success me-1"
-                              onClick={() => downloadFile(file)}
-                              title="Download"
-                            >
-                              <Download size={14} />
-                            </button>
-                            <button 
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeFile(selectedExpenditure.id, index)}
-                              title="Remove"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    <Form.Label>Payee Name</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <User size={16} />
+                      </span>
+                      <Form.Control
+                        type="text"
+                        className="form-control-lg"
+                        placeholder="Enter payee name"
+                        value={selectedExpenditure?.payee_name || ""}
+                        onChange={(e) =>
+                          setSelectedExpenditure({
+                            ...selectedExpenditure,
+                            payee_name: e.target.value,
+                          })
+                        }
+                        isInvalid={!!errors.payee_name}
+                      />
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.payee_name}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Amount</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <DollarSign size={16} />
+                      </span>
+                      <Form.Control
+                        type="number"
+                        className="form-control-lg"
+                        placeholder="Enter amount"
+                        value={selectedExpenditure?.amount || ""}
+                        onChange={(e) =>
+                          setSelectedExpenditure({
+                            ...selectedExpenditure,
+                            amount: e.target.value,
+                          })
+                        }
+                        isInvalid={!!errors.amount}
+                      />
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.amount}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Payment Mode</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <CreditCard size={16} />
+                      </span>
+                      <Form.Select
+                        className="form-control-lg"
+                        value={selectedExpenditure?.payment_mode_id || ""}
+                        onChange={(e) =>
+                          setSelectedExpenditure({
+                            ...selectedExpenditure,
+                            payment_mode_id: e.target.value,
+                          })
+                        }
+                        isInvalid={!!errors.payment_mode_id}
+                      >
+                        <option value="">Select Payment Mode</option>
+                        {paymentModes.map((mode) => (
+                          <option key={mode.id} value={mode.id}>
+                            {mode.payment_method || mode.name}
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </div>
+                    <Form.Control.Feedback type="invalid">
+                      {errors.payment_mode_id}
+                    </Form.Control.Feedback>
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Bill/Receipt ID</Form.Label>
+                    <div className="input-group">
+                      <span className="input-group-text">
+                        <FileText size={16} />
+                      </span>
+                      <Form.Control
+                        type="text"
+                        className="form-control-lg"
+                        placeholder="Enter bill/receipt ID"
+                        value={selectedExpenditure?.bill_id || ""}
+                        onChange={(e) =>
+                          setSelectedExpenditure({
+                            ...selectedExpenditure,
+                            bill_id: e.target.value,
+                          })
+                        }
+                      />
                     </div>
                   </Form.Group>
-                )}
-              </Col>
-            </Row>
-          </Form>
-        </div>
-        <div className="thaniya-normal-footer">
-          <button onClick={closeModal} className="s-btn s-btn-light">
-            Cancel
-          </button>
-          <button
-            onClick={handleUpdateExpenditure}
-            className="s-btn s-btn-grad-danger"
-          >
-            Update Expenditure
-          </button>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label>Update Bill Image</Form.Label>
+                    <Form.Control
+                      type="file"
+                      className="form-control-lg"
+                      accept="image/*"
+                      onChange={(e) => handleImageUpload(e, true)}
+                    />
+                    <Form.Text className="text-muted">
+                      Upload new bill image (JPEG, PNG, GIF - Max 5MB)
+                    </Form.Text>
+                  </Form.Group>
+
+                  {selectedExpenditure?.image_url && !selectedExpenditure.image && (
+                    <Form.Group className="mb-3">
+                      <Form.Label>Current Image</Form.Label>
+                      <div className="text-center border rounded p-3">
+                        <Image 
+                          src={selectedExpenditure.image_url} 
+                          thumbnail 
+                          style={{ maxHeight: '200px', cursor: 'pointer' }}
+                          onClick={() => openImageModal(selectedExpenditure.image_url)}
+                        />
+                        <div className="mt-2">
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm"
+                            onClick={() => openImageModal(selectedExpenditure.image_url)}
+                            className="me-2"
+                          >
+                            <Eye size={16} className="me-1" />
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            onClick={() => removeImage(true)}
+                          >
+                            <X size={16} className="me-1" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    </Form.Group>
+                  )}
+
+                  {selectedExpenditure?.image && imagePreviewUrl && (
+                    <Form.Group className="mb-3">
+                      <Form.Label>New Image Preview</Form.Label>
+                      <div className="text-center border rounded p-3">
+                        <Image 
+                          src={imagePreviewUrl} 
+                          thumbnail 
+                          style={{ maxHeight: '200px' }}
+                          onLoad={() => URL.revokeObjectURL(imagePreviewUrl)}
+                        />
+                        <div className="mt-2">
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            onClick={() => {
+                              removeImage(true);
+                              setImagePreviewUrl(null);
+                            }}
+                          >
+                            <X size={16} className="me-1" />
+                            Remove New Image
+                          </Button>
+                        </div>
+                      </div>
+                    </Form.Group>
+                  )}
+                </Col>
+              </Row>
+            </Form>
+          </div>
+          <div className="thaniya-normal-footer">
+            <button onClick={closeModal} className="s-btn s-btn-light">
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateExpenditure}
+              className="s-btn s-btn-grad-danger"
+              disabled={uploadingImage}
+            >
+              {uploadingImage ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />
+                  Updating...
+                </>
+              ) : (
+                'Update Expenditure'
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Delete Confirmation Modal Component
   const DeleteModal = () => (
@@ -1354,115 +1421,6 @@ const ExpenditureMaster = () => {
     </div>
   );
 
-  // Files Tab Content Component
-  const FilesTabContent = () => {
-    const allFiles = expenditures.flatMap(expenditure => 
-      expenditure.files.map(file => ({ ...file, expenditure }))
-    );
-
-    const filteredFiles = useMemo(() => {
-      if (!searchTermFiles) return allFiles;
-      
-      const lowerSearchTerm = searchTermFiles.toLowerCase();
-      return allFiles.filter(file => 
-        file.name.toLowerCase().includes(lowerSearchTerm) ||
-        file.expenditure.payee_name?.toLowerCase().includes(lowerSearchTerm) ||
-        file.expenditure.description?.toLowerCase().includes(lowerSearchTerm) ||
-        file.expenditure.date?.includes(lowerSearchTerm) ||
-        file.expenditure.bill_id?.toLowerCase().includes(lowerSearchTerm)
-      );
-    }, [allFiles, searchTermFiles]);
-
-    if (allFiles.length === 0) {
-      return (
-        <Card>
-          <Card.Body className="text-center py-5">
-            <FileText size={48} className="text-muted mb-3" />
-            <h5>No files uploaded yet</h5>
-            <p className="text-muted">Upload files in the expenditure records to view them here.</p>
-          </Card.Body>
-        </Card>
-      );
-    }
-
-    return (
-      <Card>
-        <Card.Header className="s-card-header d-flex justify-content-between align-items-center">
-          <Card.Title>All Uploaded Files</Card.Title>
-          <InputGroup style={{ width: '300px' }}>
-            <InputGroup.Text>
-              <Search size={16} />
-            </InputGroup.Text>
-            <Form.Control
-              type="text"
-              placeholder="Search files..."
-              value={searchTermFiles}
-              onChange={(e) => setSearchTermFiles(e.target.value)}
-            />
-          </InputGroup>
-        </Card.Header>
-        <div className="s-card-body">
-          {filteredFiles.length === 0 ? (
-            <Alert variant="info" className="m-3">
-              {searchTermFiles ? 'No files match your search.' : 'No files found.'}
-            </Alert>
-          ) : (
-            <Table responsive className="s-bordered">
-              <thead>
-                <tr>
-                  <th>File Name</th>
-                  <th>Expenditure Record</th>
-                  <th>Payee</th>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Size</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredFiles.map((file, index) => (
-                  <tr key={index}>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <Paperclip size={16} className="me-2" />
-                        <span className="text-truncate" style={{maxWidth: '200px'}}>
-                          {file.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td>#{file.expenditure.id}</td>
-                    <td>{file.expenditure.payee_name}</td>
-                    <td>{file.expenditure.date}</td>
-                    <td>{file.type || 'Unknown'}</td>
-                    <td>{(file.size / 1024).toFixed(2)} KB</td>
-                    <td>
-                      <div className="d-flex">
-                        <button
-                          onClick={() => openFileModal(file)}
-                          className="btn btn-primary shadow btn-xs sharp me-1"
-                          title="View"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          onClick={() => downloadFile(file)}
-                          className="btn btn-success shadow btn-xs sharp me-1"
-                          title="Download"
-                        >
-                          <Download size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </div>
-      </Card>
-    );
-  };
-
   return (
     <Fragment>
       <PageTitle
@@ -1480,9 +1438,6 @@ const ExpenditureMaster = () => {
               <Nav variant="tabs" className="nav-tabs-bottom mb-0 me-3">
                 <Nav.Item>
                   <Nav.Link eventKey="records">Expenditure Records</Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="files">Uploaded Files</Nav.Link>
                 </Nav.Item>
               </Nav>
               
@@ -1541,7 +1496,7 @@ const ExpenditureMaster = () => {
                         <th>Category</th>
                         <th>Amount</th>
                         <th>Payment Mode</th>
-                        <th>Files</th>
+                        <th>Bill Image</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1555,13 +1510,17 @@ const ExpenditureMaster = () => {
                           <td>${parseFloat(expenditure.amount).toFixed(2)}</td>
                           <td>{getPaymentModeName(expenditure.payment_mode_id)}</td>
                           <td>
-                            {expenditure.files.length > 0 ? (
-                              <Badge bg="success">
-                                <Paperclip size={12} className="me-1" />
-                                {expenditure.files.length}
+                            {expenditure.image_url ? (
+                              <Badge 
+                                bg="success" 
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => openImageModal(expenditure.image_url)}
+                              >
+                                <ImageIcon size={12} className="me-1" />
+                                View Image
                               </Badge>
                             ) : (
-                              <Badge bg="secondary">None</Badge>
+                              <Badge bg="secondary">No Image</Badge>
                             )}
                           </td>
                           <td>
@@ -1596,10 +1555,6 @@ const ExpenditureMaster = () => {
                 )}
               </div>
             </Tab.Pane>
-            
-            <Tab.Pane eventKey="files">
-              <FilesTabContent />
-            </Tab.Pane>
           </Tab.Content>
         </Card>
       </Tab.Container>
@@ -1608,7 +1563,7 @@ const ExpenditureMaster = () => {
       {showEditModal && <EditModal />}
       {showDeleteModal && <DeleteModal />}
       {showBillModal && <BillModalComponent />}
-      {showFileModal && <FileModalComponent />}
+      {showImageModal && <ImageModalComponent />}
 
       <style>{`
         .spinning {
@@ -1617,6 +1572,48 @@ const ExpenditureMaster = () => {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        
+        /* Scrollable modal styles */
+        .modal-scrollable {
+          overflow-y: auto;
+          max-height: calc(90vh - 140px);
+          padding-right: 5px;
+        }
+        
+        /* Custom scrollbar for modal */
+        .modal-scrollable::-webkit-scrollbar {
+          width: 6px;
+        }
+        
+        .modal-scrollable::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        
+        .modal-scrollable::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 10px;
+        }
+        
+        .modal-scrollable::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+        
+        /* Ensure modal header and footer stay fixed */
+        .thaniya-normal-modal {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .thaniya-normal-header,
+        .thaniya-normal-footer {
+          flex-shrink: 0;
+        }
+        
+        .thaniya-normal-body {
+          flex: 1;
+          overflow: hidden;
         }
       `}</style>
     </Fragment>

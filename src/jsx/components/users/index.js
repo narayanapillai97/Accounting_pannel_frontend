@@ -48,17 +48,18 @@ const UserMaster = () => {
   }, []);
 
   // Filter users based on search term
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm) return users;
-    
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return users.filter(user => 
-      user.full_name?.toLowerCase().includes(lowerSearchTerm) ||
-      user.email?.toLowerCase().includes(lowerSearchTerm) ||
-      user.mobile_number?.includes(lowerSearchTerm) ||
-      user.role?.toLowerCase().includes(lowerSearchTerm)
-    );
-  }, [users, searchTerm]);
+const filteredUsers = useMemo(() => {
+  if (!Array.isArray(users)) return [];
+  if (!searchTerm) return users;
+  
+  const lowerSearchTerm = searchTerm.toLowerCase();
+  return users.filter(user => 
+    (user.full_name?.toLowerCase() || '').includes(lowerSearchTerm) ||
+    (user.email?.toLowerCase() || '').includes(lowerSearchTerm) ||
+    (String(user.mobile_number || '').toLowerCase()).includes(lowerSearchTerm) ||
+    (user.role?.toLowerCase() || '').includes(lowerSearchTerm)
+  );
+}, [users, searchTerm]);
 
   const validateForm = (userData, isEdit = false) => {
     const newErrors = {};
